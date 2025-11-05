@@ -56,7 +56,7 @@ capsule_density = 250.0  # kg m-3
 simulation_start_epoch = 0.0  # s
 # Set termination conditions
 maximum_duration = constants.JULIAN_DAY  # s
-termination_altitude = 25.0E3  # m
+termination_altitude = 30.0E3  # m
 
 ###########################################################################
 # CREATE ENVIRONMENT ######################################################
@@ -64,7 +64,7 @@ termination_altitude = 25.0E3  # m
 
 # Define settings for celestial bodies
 bodies_to_create = ['Earth']
-# Define Ground station settings (Paris
+# Define Ground station settings (Paris)
 station_altitude = 35.0 # m
 station_latitude = 48.8575 # deg
 station_longitude = 2.3514 # deg
@@ -95,19 +95,19 @@ Util.add_capsule_to_body_system(bodies,
 
 # Create rotation model based on aerodynamic guidance
 environment_setup.add_flight_conditions(bodies, 'Capsule', 'Earth')
-'''
+
 aerodynamic_guidance_object = Util.PREDGUID(bodies)
 rotation_model_settings = environment_setup.rotation_model.aerodynamic_angle_based(
     'Earth', '', 'BodyFixed', aerodynamic_guidance_object.getAerodynamicAngles )
 environment_setup.add_rotation_model( bodies, 'Capsule', rotation_model_settings )
 #print("[TEST] Manual guidance eval at t=0: ", aerodynamic_guidance_object.getAerodynamicAngles(0.0))
-'''
 
+'''
 STS_guidance_object = Util.STSAerodynamicGuidance(bodies)
 rotation_model_settings = environment_setup.rotation_model.aerodynamic_angle_based(
     'Earth', '', 'BodyFixed', STS_guidance_object.getAerodynamicAngles )
 environment_setup.add_rotation_model( bodies, 'Capsule', rotation_model_settings )
-
+'''
 #angles = aerodynamic_guidance_object.getAerodynamicAngles(0.0)
 #print("[TEST] Manual aerodynamic angles at t=0:", angles)
 
@@ -210,3 +210,8 @@ if use_benchmark:
 #g = environment.SystemOfBodies.get_body('Capsule').mass
 ground_station = bodies.get_body("Earth").get_ground_station("LandingPad")
 ground_station_state = ground_station.station_state.get_cartesian_position(benchmark_dependent_variables_array[:, 0][-1])
+
+print(bodies.get_body("Capsule").flight_conditions.body_centered_body_fixed_state)
+
+print(ground_station_state)
+

@@ -333,7 +333,7 @@ def get_propagator_settings(shape_parameters,
 
     new_angles = np.array([shape_parameters[5], 0.0, 0.0])
     new_angle_function = lambda time : new_angles
-    bodies.get_body('Capsule').rotation_model.reset_aerodynamic_angle_function( new_angle_function )
+    #bodies.get_body('Capsule').rotation_model.reset_aerodynamic_angle_function( new_angle_function )
 
 
     # Retrieve initial state
@@ -1244,7 +1244,8 @@ class PREDGUID:
             altitude = self.vehicle_flight_conditions.altitude
 
             # Extract vehicle inertial position and velocity from vehicle state
-            self.pos = self.vehicle_flight_conditions.body_centered_body_fixed_state[0:3]
+            #self.pos = self.vehicle_flight_conditions.body_centered_body_fixed_state[0:3]
+            self.pos = self.vehicle.position
             self.velocity_I = self.vehicle_flight_conditions.body_centered_body_fixed_state[3:6]
 
             # Update the variables on which the aerodynamic coefficients are based (AoA and Mach)
