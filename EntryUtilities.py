@@ -76,6 +76,7 @@ def get_capsule_coefficient_interface(capsule_shape: tudatpy.kernel.math.geometr
     capsule_middle_radius = capsule_shape.middle_radius
     # Calculate reference area
     reference_area = np.pi * capsule_middle_radius ** 2
+    #reference_area = 60.82 # m^2
 
     '''
     # Create aerodynamic database
@@ -609,6 +610,7 @@ class PREDGUID:
         # 1: Pre-entry attitude hold and initial roll
 
         self.Phase = 1
+        print('Phase 1')
 
         # Define condition flags:
         self.use_relative_velocities = False # Use inertial velocities: False, use relative velocites: True
@@ -616,8 +618,7 @@ class PREDGUID:
         self.Final_Phase = False            # Has vehicle entered final phase
         self.initial_HUNTEST = False        # Has an initial pass through HUNTEST occurred?
         self.HUNTEST_iteration = False      # Has an iteration of HUNTEST occurred?
-        self.high_loft = True               # Use high loft algorithm (or low loft)
-        self.PredGuid = False               # Run PredGuid routine
+        self.high_loft = False               # Use high loft algorithm (or low loft)
         self.stop_bank_comm = False         # stop giving bank angle commands
         self.Gone_past = False              # target has been overshot
         self.skip_bank_reversal = False     # skip bank reversal in this iteration
@@ -643,6 +644,7 @@ class PREDGUID:
         self.HS = 8686.8 # m
         self.C18 = 152.4 # m/s
         self.Q7F = 1.829 # m/s^2
+        self.Q7MIN = 10.668 # m/s^2
         self.C1 = 1.25 # -
         self.VLMIN = 5486.4 # m/s
         self.CHOOK = 0.25 # -
@@ -657,7 +659,7 @@ class PREDGUID:
         self.D0 = 39.624 # m/s^2
         self.C16 = 0.01 # -
         self.C17 = 0.001 # -
-        self.max_D = 53.34 # -
+        self.Max_D = 53.34 # m/s^2
         self.KDMIN = 0.1524 # m/s^2
         self.VQUIT = 304.8 # m/s
         self.final_LD = 0.21 # m
@@ -716,6 +718,15 @@ class PREDGUID:
         self.Dbar = np.asarray([0,0,0]) # m/s^2
         self.aero_force = 0.0 # m/s^2
         self.V1 = 0.0 # m/s
+        self.V_Corr = 0.0 # m/s
+        self.altitude = 0.0 # m
+        self.velmag_output = 0.0 # m/s
+        self.gamma_L_output = 0.0 # rad
+        self.MAX_nr_runs = 0.0 # -
+        self.CPhi_Desired = 0.0 # rad
+        self.delta_r_norm = 0.0 # m
+        self.delta_r = 0.0 # m
+
 
         # Final Phase Reference Table
         # NOTE: these values are all in ft and nm, convert them to metric before use
@@ -726,8 +737,8 @@ class PREDGUID:
         self.final_phase_table = {
             '0':  [- 230.68, 34.219, 0.0000754,  -0.03546, 0.003927, 1],
             '236' : [-230.68, 34.219, 0.0000754, -0.03546, 0.003927, 1],
-            '862 ' : [-660.22, 42.245, 0.002553, -0.03072, 3.4691, 18.295],
-            '1487 ' : [-702.79, 50.763, 0.003253, -0.05057, 7.4404, 24.982],
+            '862' : [-660.22, 42.245, 0.002553, -0.03072, 3.4691, 18.295],
+            '1487' : [-702.79, 50.763, 0.003253, -0.05057, 7.4404, 24.982],
             '2113' : [-679.37, 60.767, 0.004175, -0.06528, 11.696, 31.059],
             '2739' : [-650.97, 70.409, 0.005342, -0.07676, 16.218, 37.987],
             '3364' : [-627.14, 79.309, 0.006714, -0.08658, 21.014, 46.297],
@@ -771,9 +782,7 @@ class PREDGUID:
 
     def getAerodynamicAngles(self, current_time: float):
 
-        print(f"[DEBUG] getAerodynamicAngles called at t = {current_time}")
         self.updateGuidance( current_time )
-        print(f"[DEBUG] AoA = {self.angle_of_attack}, Bank = {self.bank_angle}")
         return np.array([self.angle_of_attack, 0.0, self.bank_angle])
 
     # PredGuid sequence
@@ -793,8 +802,8 @@ class PREDGUID:
                         V_lower = self.final_vel_list[i - 1]
                         searching_interpolation = False
 
-            upper_list = final_phase_table[str(V_upper)]
-            lower_list = final_phase_table[str(V_lower)]
+            upper_list = self.final_phase_table[str(V_upper)]
+            lower_list = self.final_phase_table[str(V_lower)]
 
             RDOTREF = np.interp(VL_fps, [V_lower, V_upper], [lower_list[0], upper_list[0]])
             DREFR = np.interp(VL_fps, [V_lower, V_upper], [lower_list[1], upper_list[1]])
@@ -820,13 +829,13 @@ class PREDGUID:
             CD_est = self.CD_est_init
             LD_est = self.MAX_LD
             PG_Krho_est = self.Krho_est
-            CPhi_Desired = self.LD_comm / self.MAX_LD
+            self.CPhi_Desired = self.LD_comm / self.MAX_LD
             Bank_sign = 1
             position = self.vehicle.position
             velocity = self.vehicle.velocity
             acceleration = self.Dbar
             altitude = self.altitude
-            velocity_Mag = np.linalg(velocity)
+            velocity_Mag = np.linalg.norm(velocity)
             PG_Q7 = self.Q7 + self.KDMIN
             if self.RDOT <= 0 and self.aero_force >= PG_Q7:
                 IND_ini = 0
@@ -835,9 +844,9 @@ class PREDGUID:
 
             if self.first_PredGuid == True:
                 self.first_PredGuid = False
-                CPhi_Desired = 0.0
+                self.CPhi_Desired = 0.0
                 Lift_INC_CAPTURE = -10.0
-                MAX_nr_runs = 10
+                self.MAX_nr_runs = 10
 
 
             # reinitialise PC variables
@@ -852,11 +861,11 @@ class PREDGUID:
             cos_esc = 99999999
             cos_crash = 99999999
             cos_phi_try = 99999999
-            cos_bracket = 99999999
-            cos_extrap = 99999999
-            r_extrap = 99999999
-            r_bracket = 99999999
-            delta_r = 0
+            cos_bracket = [99999999,99999999]
+            cos_extrap = [99999999,99999999]
+            r_extrap = [99999999,99999999]
+            r_bracket = [99999999,99999999]
+            self.delta_r = 0
             F_b = 0
             phi_try_last = 0
 
@@ -875,13 +884,13 @@ class PREDGUID:
 
             # calculate desired bank angle by executing steps a number of times
             nr_run = 1
-            while nr_run <= MAX_nr_runs:
+            while nr_run <= self.MAX_nr_runs:
                 # calculate bank angle to try and its cosine using corrector
 
                 # CORRECTOR #######################################
                 if nr_run == 1:
                     # use method 1
-                    cos_phi_try = CPhi_Desired
+                    cos_phi_try = self.CPhi_Desired
                 # use bracketed solution methods
                 elif bracket == True:
                     # check if number of low solutions is not zero
@@ -962,7 +971,7 @@ class PREDGUID:
                     rk4_nr = 1
                     while rk4_nr <= 4:
                         # calculate relative velocity
-                        V_rel = v_pred - self.Earth_rate * np.cross(np.asarray([0, 0, 1], r_pred))
+                        V_rel = v_pred - self.Earth_rate * np.cross(np.asarray([0, 0, 1]), r_pred)
                         V_rel_mag2 = np.dot(V_rel, V_rel)
                         V_rel_mag = np.sqrt(V_rel_mag2)
 
@@ -1056,7 +1065,7 @@ class PREDGUID:
                     # check for atmospheric exit
                     # calculate centrifugal velocity
                     r_dot_pred = np.dot(v_pred, r_pred) / r_pred_mag
-                    gamma_pred = np.arcsin(r_dot_pred / v_pred_mag)
+                    #gamma_pred = np.arcsin(r_dot_pred / v_pred_mag)
 
                     # check for crash
                     if H_pred <= 0:
@@ -1075,38 +1084,38 @@ class PREDGUID:
                         N_esc = N_esc + 1
 
                     # check if downcontrol has been ended
-                    if v_pred <= self.V1:
+                    if v_pred_mag <= self.V1:
                         IND_ini = 1
                     # check for capture
-                    if IND_ini == 1 and a_acc >= PG_Q7 and r_dot_pred <= 0:
+                    if IND_ini == 1 and np.linalg.norm(a_acc) >= PG_Q7 and r_dot_pred <= 0:
                         # capture type solution
                         predicting = False
                         pred_capt = True
-                        range_pred = np.arccos(np.dot(self.Target_unit_vector, r_pred)) * self.ATK
+                        range_pred = np.arccos(np.dot(self.Target_unit_vector, U_pred)) * self.ATK
 
                 ###################################################################
 
                 # compute range miss
-                delta_r = range_pred - self.PredGuid_target
-                delta_r_norm = abs(delta_r)
+                self.delta_r = range_pred - self.PredGuid_target
+                self.delta_r_norm = abs(self.delta_r)
 
                 # if range miss is less than the range correct criteria, try was acceptable
-                if delta_r_norm <= range_req:
+                if self.delta_r_norm <= range_req:
                     # try was acceptable, set desired cosine of bank angle to bank angle tried and exit procedure
-                    CPhi_Desired = cos_phi_try
-                    nr_run = MAX_nr_runs + 1
+                    self.CPhi_Desired = cos_phi_try
+                    nr_run = self.MAX_nr_runs + 1
 
                 # check if full lift down is needed
-                if cos_phi_try <= np.cos(np.pi):
+                if cos_phi_try >= np.cos(np.pi) and self.delta_r >= 0.0:
                     # full lift down is needed, exit the procedure
-                    CPhi_Desired = np.cos(np.pi)
-                    nr_run = MAX_nr_runs + 1
+                    self.CPhi_Desired = np.cos(np.pi)
+                    nr_run = self.MAX_nr_runs + 1
 
                 # check if full lift up is needed
-                if cos_phi_try >= np.cos(0):
+                if cos_phi_try <= np.cos(0) and self.delta_r <= 0.0:
                     # full lift up is needed, exit the procedure
-                    CPhi_Desired = np.cos(0)
-                    nr_run = MAX_nr_runs + 1
+                    self.CPhi_Desired = np.cos(0)
+                    nr_run = self.MAX_nr_runs + 1
 
                 # determine nature of the solution
                 if pred_capt:
@@ -1123,7 +1132,7 @@ class PREDGUID:
                     r_extrap[1] = r_extrap[0]
                     r_extrap[0] = range_pred
 
-                    if delta_r >= 0:
+                    if self.delta_r >= 0:
                         # solution is high, increment number of high solutions
                         N_high = N_high + 1
                         # update high bracket terms
@@ -1147,17 +1156,17 @@ class PREDGUID:
                     delta_phi = abs(phi_try - phi_try_last)
                     # check if bank angle change is less than minimum allowable bank angle change
                     if delta_phi <= delta_phi_min:
-                        CPhi_Desired = np.cos((phi_try + phi_try_last) / 2)
+                        self.CPhi_Desired = np.cos((phi_try + phi_try_last) / 2)
 
                 # set previous bank angle try to current bank angle
                 phi_try_last = phi_try
 
                 # check if maximum number of runs has been reached
-                if nr_run == MAX_nr_runs:
+                if nr_run == self.MAX_nr_runs:
                     # perform corrector procedure once more
                     if nr_run == 1:
                         # use method 1
-                        cos_phi_try = CPhi_Desired
+                        cos_phi_try = self.CPhi_Desired
                     # use bracketed solution methods
                     elif bracket == True:
                         # check if number of low solutions is not zero
@@ -1206,24 +1215,24 @@ class PREDGUID:
                     phi_try = np.arccos(cos_phi_try)
 
                     # set cosine of desired bank angle to the calculated bank angle to try
-                    CPhi_Desired = cos_phi_try
+                    self.CPhi_Desired = cos_phi_try
+
+                nr_run = nr_run + 1
 
         # outputs from PredGuid routine
-        LD_command = CPhi_Desired * self.MAX_LD
-        if delta_r_norm <= (1.852 * 10**6):
-            velmag_output = v_pred_mag
-            gamma_L_output = - r_dot_pred / velmag_output
+        LD_command = self.CPhi_Desired * self.MAX_LD
+        if self.delta_r_norm <= (1.852 * 10**6):
+            self.velmag_output = v_pred_mag
+            self.gamma_L_output = - r_dot_pred / self.velmag_output
 
-        return(LD_command, delta_r, velmag_output, gamma_L_output)
+        return(LD_command, self.delta_r, self.velmag_output, self.gamma_L_output)
 
 
     # call at each simulation step to get bank angle
     def updateGuidance(self, current_time: float):
-        print(f"[DEBUG] updateGuidance called at t = {current_time}")
         if(math.isnan( current_time)):
             self.current_time = float("NaN")
         elif( current_time != self.current_time ):
-            print(current_time)
             # Get the (constant) angular velocity of the Earth body
             #earth_angular_velocity = np.linalg.norm(self.earth.body_fixed_angular_velocity)
             # Get the distance between the vehicle and the Earth bodies
@@ -1241,12 +1250,12 @@ class PREDGUID:
             mach_number = self.vehicle_flight_conditions.mach_number
             airspeed = self.vehicle_flight_conditions.airspeed
             density = self.vehicle_flight_conditions.density
-            altitude = self.vehicle_flight_conditions.altitude
+            self.altitude = self.vehicle_flight_conditions.altitude
 
             # Extract vehicle inertial position and velocity from vehicle state
             #self.pos = self.vehicle_flight_conditions.body_centered_body_fixed_state[0:3]
             self.pos = self.vehicle.position
-            self.velocity_I = self.vehicle_flight_conditions.body_centered_body_fixed_state[3:6]
+            self.velocity_I = self.vehicle.velocity
 
             # Update the variables on which the aerodynamic coefficients are based (AoA and Mach)
             #current_aerodynamics_independent_variables = [self.angle_of_attack, mach_number]
@@ -1377,6 +1386,7 @@ class PREDGUID:
                                       + self.target_local_east * np.sin(angle_to_pred_target)
 
             self.LATANG = np.dot(self.Target_unit_vector, np.cross(V_I_unit, pos_unit))
+            #print(self.Target_unit_vector, pos_unit)
             self.Theta = np.arccos(np.dot(self.Target_unit_vector, pos_unit))
             self.downrange_distance = self.Theta * self.ATK
 
@@ -1401,12 +1411,14 @@ class PREDGUID:
                     if aero_g >= 0.5:
                         # vehicle has entered sensible atmosphere, set has entered flag to true
                         self.Has_entered = True
+                        print(current_time, ' Has entered')
 
                         # Check if velocity is too low
                         if V <= self.v_final:
                             # set L/D to full lift up and set phase to ballistic
                             self.LD_comm = self.MAX_LD
                             self.Phase = 4
+                            print(current_time, ' Phase 4')
                         # check entry angle
                         else:
                             if V >= (self.v_final - (self.K_initial_roll * (self.RDOT/V)**3)):
@@ -1429,6 +1441,7 @@ class PREDGUID:
                     if self.RDOT >= self.RDOT_PHASE2:
                         # altitude rate is low enough to proceed to next phase
                         self.Phase = 2
+                        print(current_time, ' Phase 2')
 
             ###################################################################################
             # HUNTEST/Constant drag phase
@@ -1444,13 +1457,13 @@ class PREDGUID:
                 # Estimate start of upcontrol phase conditions, check whether altitude is decreasing:
                 if self.RDOT <= 0.0:
                     # project conditions to pullout using reference L/D
-                    self.V1 = V + self.RDOT / self.ref_LD
+                    self.V1 = V + (self.RDOT / self.ref_LD)
                     A0 = ((self.V1/V)**2) * (self.aero_force + ((self.RDOT**2)/(2 * self.HS * self.ref_LD)))
                     A1 = self.aero_force
                 else:
                     # project conditions forward using full lift up
-                    self.V1 = V + self.RDOT / self.MAX_LD
-                    A0 = ((self.V1 / V) ** 2) * (self.aero_force + ((self.RDOT ** 2) / (2 * self.HS * self.MAX_LD)))
+                    self.V1 = V + (self.RDOT / self.MAX_LD)
+                    A0 = ((self.V1 / V) ** 2) * (self.aero_force + ((self.RDOT ** 2)/ (2 * self.HS * self.MAX_LD)))
                     A1 = A0
 
                 # If first time through the Huntest routine, initialise some variables:
@@ -1458,32 +1471,36 @@ class PREDGUID:
                     self.initial_HUNTEST = True
                     Diff_old = 0.0
                     V1_old = self.V1 + self.C18
-                    Q7 = Q7F
+                    self.Q7 = self.Q7F
 
 
                 Const_drag = False
                 Hunting = True
-
                 while Hunting:
                     # Calculate exit velocity at the end of upcontrol
-                    self.ALP = 2 * self.C1 * self.HS / (self.ref_LD * self.V1 ** 2)
+                    self.ALP = 2 * self.C1 * A0 * self.HS / (self.ref_LD * self.V1 ** 2)
                     Factor_1 = self.V1 / (1 - self.ALP)
                     Factor_2 = self.ALP * (self.ALP - 1) / A0
+                    if Factor_2 <= 0:
+                        Factor_2 = -1 * Factor_2
                     self.VL = Factor_1 * (1 - np.sqrt(Factor_2 * self.Q7 + self.ALP))
+
 
                     # Check whether exit velocity is sufficient to perform skip
                     if self.VL <= self.VLMIN:
                         # Velocity is too low to perform a skip, enter final phase
                         self.Phase = 5
+                        print(current_time, 'velocity too low for skip, Phase 5')
                         self.Final_Phase = True
                         Hunting = False
                     elif self.VL >= self.VSAT:
                         # Skip energy is too excessive, stay in HUNTEST phase, go to constant drag
                         self.Phase = 2
+                        print(current_time, 'skip energy too excessive, stay in Phase 2')
                         Hunting = False
                         Const_drag = True
                     else:
-                        VS1 = min(self.V1, VSAT)
+                        VS1 = min(self.V1, self.VSAT)
 
                         # Calculate exit flight path angle
                         DVL = VS1 - self.VL
@@ -1491,7 +1508,8 @@ class PREDGUID:
                         AHOOK = self.CHOOK * ((DHOOK / self.Q7) - 1) / DVL
                         self.gamma_L1 = self.ref_LD * (self.V1 - self.VL) / self.VL
                         self.gamma_L = self.gamma_L1 - (self.CH1 * self.g_scaling * (DVL ** 2) *
-                                                        (1 + AHOOK * DVL) / (DHOOK * VL ** 2))
+                                                        (1 + AHOOK * DVL) / (DHOOK * self.VL ** 2))
+
 
                         # Check if skip can exit atmosphere:
                         if self.gamma_L <= 0.0:
@@ -1499,7 +1517,9 @@ class PREDGUID:
                             self.VL = self.VL + (self.gamma_L * self.VL /
                                                  (self.ref_LD - ((3 * AHOOK * (DVL ** 2) + 2 * DVL) *
                                                                  (self.CH1 * self.g_scaling) / (DHOOK * self.VL))))
+
                             self.Q7 = ((1 - (self.VL / Factor_1) ** 2) - self.ALP) / Factor_2
+                            self.Q7 = np.median([self.Q7F, self.Q7, self.Q7MIN])
                             self.gamma_L = 0
 
                         # calculate simple version of gamma_L, gamma_L1
@@ -1525,8 +1545,8 @@ class PREDGUID:
                                         V_lower = self.final_vel_list[i - 1]
                                         searching_interpolation = False
 
-                            upper_list = final_phase_table[str(V_upper)]
-                            lower_list = final_phase_table[str(V_lower)]
+                            upper_list = self.final_phase_table[str(V_upper)]
+                            lower_list = self.final_phase_table[str(V_lower)]
 
                             RDOTREF = np.interp(VL_fps, [V_lower, V_upper], [lower_list[0], upper_list[0]])
                             DREFR = np.interp(VL_fps, [V_lower, V_upper], [lower_list[1], upper_list[1]])
@@ -1560,6 +1580,7 @@ class PREDGUID:
                             # assuming vehicle remains at current L/D, it will stay within tolerance of target position
                             # switch to upcontrol
                             self.Phase = 3
+                            print(current_time, 'vehicle in tolarance of target position, Phase 3')
                             Hunting = False
                         else:
                             if not self.HUNTEST_iteration:
@@ -1573,28 +1594,28 @@ class PREDGUID:
                                     Const_drag = True
                                 else:
                                     # predicted range is too close, velocity should be tweaked
-                                    V_Corr = self.V1 - V1_old
+                                    self.V_Corr = self.V1 - V1_old
 
                                     # Calculate velocity correction
-                                    V_Corr = (V_Corr * Diff) / (Diff_old - Diff)
+                                    self.V_Corr = (self.V_Corr * Diff) / (Diff_old - Diff)
 
                                     # Limit velocity correction
-                                    V_Corr = min(V_Corr, self.V_Corr_lim)
+                                    self.V_Corr = min(self.V_Corr, self.V_Corr_lim)
 
                             # see if exit velocity is increased too much by correction
-                            if (self.VSAT - self.VL) <= V_Corr:
-                               V_Corr = V_Corr / 2
+                            if (self.VSAT - self.VL) <= self.V_Corr:
+                               self.V_Corr = self.V_Corr / 2
 
                             # Apply velocity correction to upcontrol starting velocity
-                            self.V1 = self.V1 + V_Corr
+                            self.V1 = self.V1 + self.V_Corr
                             self.HUNTEST_iteration = True
                             Diff_old = Diff
 
                 # Constant Drag
                 if Const_drag:
                     # Calculate Constant Drag
-                    self.LD_comm = (-LEQ / self.D0) + self.C16 (self.aero_force - self.D0) - \
-                            self.C17 (self.RDOT + 2 * self.HS * self.D0 / V)
+                    self.LD_comm = (-LEQ / self.D0) + self.C16 * (self.aero_force - self.D0) - \
+                            self.C17 * (self.RDOT + 2 * self.HS * self.D0 / V)
 
                     # Check if commanded L/D will cause too much drag
                     if self.LD_comm <= 0 and self.aero_force >= self.Max_D:
@@ -1624,12 +1645,14 @@ class PREDGUID:
                     elif V < (self.VL + self.C18) and self.RDOT < 0.0:
                         # move to final phase
                         self.Phase = 5
+                        print(current_time, ' Phase 5')
                         self.Final_Phase = True
 
                     # check if drag has dropped too low
                     elif self.aero_force <= self.Q7:
                         # switch to ballistic phase
                         self.Phase = 4
+                        print(current_time, ' Phase 4')
 
                     # check if drag level is still higher than upcontrol starting drag
                     elif self.aero_force >= A0:
@@ -1655,12 +1678,14 @@ class PREDGUID:
                     if V < (self.VL + self.C18) and self.RDOT < 0.0:
                         # move to final phase
                         self.Phase = 5
+                        print(current_time, ' Phase 5')
                         self.Final_Phase = True
 
                     # check if drag has dropped too low
                     elif self.aero_force <= self.Q7:
                         # switch to ballistic phase
                         self.Phase = 4
+                        print(current_time, ' Phase 4')
 
                     # if algorithm has run past all tests, proceed to this step
                     else:
@@ -1683,6 +1708,7 @@ class PREDGUID:
                 if self.aero_force >= (self.Q7 + self.KDMIN):
                     # move to final phase
                     self.Phase = 5
+                    print(current_time, ' Phase 5')
                     self.Final_Phase = True
                 else:
                     # continue steering with PredGuid, then LATLOGIC
@@ -1709,7 +1735,7 @@ class PREDGUID:
                         self.LD_comm = -1 * self.MAX_LD
 
                     # check if target has just now been overshot
-                    elif np.dot((np.cross(self.Target_unit_vector, self.pos), np.cross(V_I_unit, pos_unit))) >= 0.0:
+                    elif np.dot(np.cross(self.Target_unit_vector, self.pos), np.cross(V_I_unit, pos_unit)) >= 0.0:
                         # target has just now been overshot
                         self.Gone_past = True
                         # command full lift down
@@ -1726,8 +1752,8 @@ class PREDGUID:
                                     V_lower = self.final_vel_list[i - 1]
                                     searching_interpolation = False
 
-                        upper_list = final_phase_table[str(V_upper)]
-                        lower_list = final_phase_table[str(V_lower)]
+                        upper_list = self.final_phase_table[str(V_upper)]
+                        lower_list = self.final_phase_table[str(V_lower)]
 
                         RDOTREF = np.interp(V_fps, [V_lower, V_upper], [lower_list[0], upper_list[0]])
                         DREFR = np.interp(V_fps, [V_lower, V_upper], [lower_list[1], upper_list[1]])
@@ -1740,7 +1766,9 @@ class PREDGUID:
                                       ((self.aero_force / 3.281) - DREFR)
                         self.PREDANGL = PREDANGL_nm * 1852
 
-                        self.LD_comm = self.final_LD + ((4 * (self.downrange_distance - self.PREDANGL))/F3)
+                        #print(self.downrange_distance, 'Downrange distance')
+                        self.LD_comm = self.final_LD + ((4 * (self.downrange_distance - self.PREDANGL))/(F3 * 1852))
+                        #print(self.LD_comm, 'Final Phase LD')
 
                     # check if drag is low enough not to need the G-limiter
                     if self.aero_force >= (self.GMAX / 2):
@@ -1787,6 +1815,7 @@ class PREDGUID:
 
                     # check if lateral angle limit is exceeded
                     if (self.K2ROLL * self.LATANG) >= self.Y and not self.skip_bank_reversal:
+                        print('Bank reversal')
                         # command bank reversal by switching the quadrant of the bank angle
                         self.K2ROLL = -1 * self.K2ROLL
                         # check whether the vehicle is in a lift down configuration
@@ -1803,8 +1832,8 @@ class PREDGUID:
                     self.LD_comm = np.sign(self.LD_comm) * self.MAX_LD
 
                 # calculate bank angle command from the desired L/D
-
                 RollC = self.K2ROLL * np.arccos(self.LD_comm / self.MAX_LD) + 2 * np.pi * self.K1ROLL
+
 
             # update bank angle
             self.bank_angle = RollC
@@ -1834,7 +1863,6 @@ class STSAerodynamicGuidance:
 
     # Function that is called at each simulation time step to update the ideal bank angle of the vehicle
     def updateGuidance(self, current_time: float):
-        print('guidance')
 
         if( math.isnan( current_time ) ):
             self.current_time = float("NaN")
