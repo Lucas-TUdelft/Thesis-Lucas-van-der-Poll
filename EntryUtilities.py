@@ -4,7 +4,7 @@
 
 # General imports
 import math
-
+import os
 import numpy as np
 
 # Tudatpy imports
@@ -98,6 +98,7 @@ def get_capsule_coefficient_interface(capsule_shape: tudatpy.kernel.math.geometr
         force_reference_point=moment_reference
     )
     '''
+    '''
     drag_coefficient = 1.5
     lift_coefficient = 0.525
     aero_coefficient_settings = environment_setup.aerodynamic_coefficients.constant(
@@ -105,6 +106,18 @@ def get_capsule_coefficient_interface(capsule_shape: tudatpy.kernel.math.geometr
         constant_force_coefficient=[drag_coefficient, 0, lift_coefficient],
         force_coefficients_frame=environment.negative_aerodynamic_frame_coefficients,
     )
+    '''
+    # Define the aerodynamic coefficient files (leave C_S empty)
+    lookup_tables_path = os.path.join(os.getcwd(),"AerodynamicLookupTables")
+    aero_coefficients_files = {0: os.path.join(lookup_tables_path,"CD_table.dat"),
+                               2: os.path.join(lookup_tables_path,"CL_table.dat")}
+    # Setup the aerodynamic coefficients settings tabulated from the files
+    coefficient_settings = environment_setup.aerodynamic_coefficients.tabulated_force_only_from_files(
+        force_coefficient_files=aero_coefficients_files,
+        reference_area=reference_area,
+        independent_variable_names=[environment.mach_number_dependent, environment.altitude_dependent]
+    )
+
     return aero_coefficient_settings
 
 
@@ -726,6 +739,7 @@ class PREDGUID:
         self.CPhi_Desired = 0.0 # rad
         self.delta_r_norm = 0.0 # m
         self.delta_r = 0.0 # m
+        self.A0 = 0.0 # m/s
 
 
         # Final Phase Reference Table
@@ -1458,13 +1472,13 @@ class PREDGUID:
                 if self.RDOT <= 0.0:
                     # project conditions to pullout using reference L/D
                     self.V1 = V + (self.RDOT / self.ref_LD)
-                    A0 = ((self.V1/V)**2) * (self.aero_force + ((self.RDOT**2)/(2 * self.HS * self.ref_LD)))
+                    self.A0 = ((self.V1/V)**2) * (self.aero_force + ((self.RDOT**2)/(2 * self.HS * self.ref_LD)))
                     A1 = self.aero_force
                 else:
                     # project conditions forward using full lift up
                     self.V1 = V + (self.RDOT / self.MAX_LD)
-                    A0 = ((self.V1 / V) ** 2) * (self.aero_force + ((self.RDOT ** 2)/ (2 * self.HS * self.MAX_LD)))
-                    A1 = A0
+                    self.A0 = ((self.V1 / V) ** 2) * (self.aero_force + ((self.RDOT ** 2)/ (2 * self.HS * self.MAX_LD)))
+                    A1 = self.A0
 
                 # If first time through the Huntest routine, initialise some variables:
                 if self.initial_HUNTEST == False:
@@ -1478,9 +1492,9 @@ class PREDGUID:
                 Hunting = True
                 while Hunting:
                     # Calculate exit velocity at the end of upcontrol
-                    self.ALP = 2 * self.C1 * A0 * self.HS / (self.ref_LD * self.V1 ** 2)
+                    self.ALP = 2 * self.C1 * self.A0 * self.HS / (self.ref_LD * self.V1 ** 2)
                     Factor_1 = self.V1 / (1 - self.ALP)
-                    Factor_2 = self.ALP * (self.ALP - 1) / A0
+                    Factor_2 = self.ALP * (self.ALP - 1) / self.A0
                     if Factor_2 <= 0:
                         Factor_2 = -1 * Factor_2
                     self.VL = Factor_1 * (1 - np.sqrt(Factor_2 * self.Q7 + self.ALP))
@@ -1565,10 +1579,10 @@ class PREDGUID:
 
                         # Upcontrol phase range
                         self.ASPUP = (self.ATK / self.Earth_radius) * (self.HS / self.gamma_L1) * \
-                                     np.log((A0 * (self.VL ** 2)) / (self.Q7 * (self.V1 ** 2)))
+                                     np.log((self.A0 * (self.VL ** 2)) / (self.Q7 * (self.V1 ** 2)))
 
                         # Downcontrol phase range
-                        self.ASPDWN = -1 * self.RDOT * V * self.ATK / (A0 * self.MAX_LD * self.Earth_radius)
+                        self.ASPDWN = -1 * self.RDOT * V * self.ATK / (self.A0 * self.MAX_LD * self.Earth_radius)
 
                         # Total range
                         self.ASP = self.ASKEP + self.ASPF + self.ASPUP + self.ASPDWN
@@ -1637,7 +1651,7 @@ class PREDGUID:
                         # downcontrol still in effect, calcutlate reference altitude rate and drag, then calculate
                         # command L/D based on trajectory errors
                         self.RDOT_ref_DCRTL = self.MAX_LD * (self.V1 - V)
-                        self.D_ref_DCTRL = ((V/self.V1)**2) * A0 - ((self.RDOT_ref_DCRTL**2)/(2 * self.HS * self.MAX_LD))
+                        self.D_ref_DCTRL = ((V/self.V1)**2) * self.A0 - ((self.RDOT_ref_DCRTL**2)/(2 * self.HS * self.MAX_LD))
                         self.LD_comm = self.MAX_LD + self.C16 * (self.aero_force - self.D_ref_DCTRL) - \
                                   self.C17 * (self.RDOT - self.RDOT_ref_DCRTL)
 
@@ -1655,7 +1669,7 @@ class PREDGUID:
                         print(current_time, ' Phase 4')
 
                     # check if drag level is still higher than upcontrol starting drag
-                    elif self.aero_force >= A0:
+                    elif self.aero_force >= self.A0:
                         # decrease drag level, command full lift up
                         self.LD_comm = self.MAX_LD
 
