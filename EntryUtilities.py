@@ -107,12 +107,14 @@ def get_capsule_coefficient_interface(capsule_shape: tudatpy.kernel.math.geometr
         force_coefficients_frame=environment.negative_aerodynamic_frame_coefficients,
     )
     '''
+
     # Define the aerodynamic coefficient files (leave C_S empty)
     lookup_tables_path = os.path.join(os.getcwd(),"AerodynamicLookupTables")
-    aero_coefficients_files = {0: os.path.join(lookup_tables_path,"CD_table.dat"),
-                               2: os.path.join(lookup_tables_path,"CL_table.dat")}
+    aero_coefficients_files = {0: os.path.join(lookup_tables_path,"CD_table.txt"),
+                               2: os.path.join(lookup_tables_path,"CL_table.txt")}
+    print(aero_coefficients_files)
     # Setup the aerodynamic coefficients settings tabulated from the files
-    coefficient_settings = environment_setup.aerodynamic_coefficients.tabulated_force_only_from_files(
+    aero_coefficient_settings = environment_setup.aerodynamic_coefficients.tabulated_force_only_from_files(
         force_coefficient_files=aero_coefficients_files,
         reference_area=reference_area,
         independent_variable_names=[environment.mach_number_dependent, environment.altitude_dependent]
