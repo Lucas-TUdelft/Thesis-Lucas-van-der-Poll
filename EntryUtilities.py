@@ -75,8 +75,8 @@ def get_capsule_coefficient_interface(capsule_shape: tudatpy.kernel.math.geometr
     # Get the capsule middle radius
     capsule_middle_radius = capsule_shape.middle_radius
     # Calculate reference area
-    reference_area = np.pi * capsule_middle_radius ** 2
-    #reference_area = 60.82 # m^2
+    #reference_area = np.pi * capsule_middle_radius ** 2
+    reference_area = 60.82 # m^2
 
     '''
     # Create aerodynamic database
@@ -112,7 +112,6 @@ def get_capsule_coefficient_interface(capsule_shape: tudatpy.kernel.math.geometr
     lookup_tables_path = os.path.join(os.getcwd(),"AerodynamicLookupTables")
     aero_coefficients_files = {0: os.path.join(lookup_tables_path,"CD_table.txt"),
                                2: os.path.join(lookup_tables_path,"CL_table.txt")}
-    print(aero_coefficients_files)
     # Setup the aerodynamic coefficients settings tabulated from the files
     aero_coefficient_settings = environment_setup.aerodynamic_coefficients.tabulated_force_only_from_files(
         force_coefficient_files=aero_coefficients_files,
@@ -272,10 +271,10 @@ def get_initial_state(simulation_start_epoch: float,
         The initial state of the vehicle expressed in inertial coordinates.
     """
     # Set initial spherical elements
-    radial_distance = spice_interface.get_average_radius('Earth') + 120.0E3
+    radial_distance = spice_interface.get_average_radius('Earth') + 157.7E3
     latitude = np.deg2rad(0.0)
     longitude = np.deg2rad(68.75)
-    speed = 7.63E3
+    speed = 7.50E3
     flight_path_angle = np.deg2rad(-0.8)
     heading_angle = np.deg2rad(34.37)
 
@@ -633,26 +632,27 @@ class PREDGUID:
         self.Final_Phase = False            # Has vehicle entered final phase
         self.initial_HUNTEST = False        # Has an initial pass through HUNTEST occurred?
         self.HUNTEST_iteration = False      # Has an iteration of HUNTEST occurred?
-        self.high_loft = False               # Use high loft algorithm (or low loft)
+        self.high_loft = False              # Use high loft algorithm (or low loft)
         self.stop_bank_comm = False         # stop giving bank angle commands
         self.Gone_past = False              # target has been overshot
         self.skip_bank_reversal = False     # skip bank reversal in this iteration
         self.first_PredGuid = True          # is this the first time through PredGuid
+        self.initialised = False            # has the initialisation at t = 0.0 occurred?
 
         # Define Constants:
-        self.Equatorial_Earth_Rate = 471.434672064 # m/s
-        self.VSAT = 7853.53693704 # m/s
+        self.Equatorial_Earth_Rate = 7.2921159 * 10**-5 # rad/s
         self.g_scaling = 9.81456 # m/s^2
-        self.MAX_LD = 0.35 # -
+        self.MAX_LD = 0.25 # -
         self.K_rho_filter_gain = 0.05 # -
         self.Earth_rate = 0.0000729211505 # rad/s
         self.Earth_radius = 6378140 # m
+        self.VSAT = 7853.53693704 # m/s
         self.V_MIN = self.VSAT/2 # m/s
         self.ATK = 6366707.0736 # m/rad
         self.v_final = 7620 # m/s
         self.K_initial_roll = 13529862.298 # m/s
         self.KA = 19.62912 # m/s^2
-        self.RDOT_PHASE2 = -213.36 # m/s
+        self.RDOT_PHASE2 = 213.36 # m/s
         self.D2 = 53.34 # m/s^2
         self.ref_lD1 = 0.1 # -
         self.ref_LD2 = 0.2 # -
@@ -701,7 +701,8 @@ class PREDGUID:
         self.Theta = 0  # rad
         ground_station = bodies.get_body("Earth").get_ground_station("LandingPad")
         self.Target_vector0 = ground_station.station_state.get_cartesian_position(0.0) # m
-        self.Target_unit_vector = self.Target_vector0 / np.linalg.norm(self.Target_vector0) # -
+        self.Target_unit_vector0 = self.Target_vector0 / np.linalg.norm(self.Target_vector0) # -
+        self.Target_unit_vector = self.Target_unit_vector0
         self.target_local_east = np.cross(np.array([0,0,1]), self.Target_unit_vector) # -
         self.LATANG = 0.0 # rad
         self.downrange_distance = 0.0 # m
@@ -742,6 +743,8 @@ class PREDGUID:
         self.delta_r_norm = 0.0 # m
         self.delta_r = 0.0 # m
         self.A0 = 0.0 # m/s
+        self.V1_old = 0.0 # m/s
+        self.Diff_old = 0.0 # m/s
 
 
         # Final Phase Reference Table
@@ -839,7 +842,7 @@ class PREDGUID:
         # calculate final phase range
         self.PredGuid_target = self.downrange_distance - self.ASPF
 
-        # decide whether to run pc_sequencer: run if range long enough or pc_sequencer has not been run before
+        # decide whether to run pc_sequencer: run if range is long enough or pc_sequencer has not been run before
         if self.PredGuid_target >= 185200 or self.first_PredGuid == True:
             # initialise inputs
             CD_est = self.CD_est_init
@@ -983,11 +986,12 @@ class PREDGUID:
                 # execute predictor loop a number of times
                 predicting = True
                 while predicting:
+
                     # execute the 4th order Runge-Kutta Integration Loop 4 times
                     rk4_nr = 1
                     while rk4_nr <= 4:
                         # calculate relative velocity
-                        V_rel = v_pred - self.Earth_rate * np.cross(np.asarray([0, 0, 1]), r_pred)
+                        V_rel = v_pred - np.cross(np.asarray([0, 0, self.Earth_rate]), r_pred)
                         V_rel_mag2 = np.dot(V_rel, V_rel)
                         V_rel_mag = np.sqrt(V_rel_mag2)
 
@@ -1006,6 +1010,7 @@ class PREDGUID:
                         # compute aerodynamic accelerations
                         a_d = PG_Krho_est * rho_pred * V_rel_mag2 / (BC ** 2)
                         a_l = LD_pred * a_d
+                        predicting = False
 
                         # compute lift vector
                         vel_unit = V_rel / V_rel_mag
@@ -1014,7 +1019,7 @@ class PREDGUID:
                         I_lat_c_mag = np.sqrt(I_lat_c_mag_2)
                         I_lat = I_lat_c / I_lat_c_mag
 
-                        if self.Model_Lift_Down and v_pred <= self.VLD:
+                        if self.Model_Lift_Down and v_pred_mag <= self.VLD:
                             I_lift = np.cross(I_lat, vel_unit) * np.cos(np.deg2rad(115)) + \
                                      I_lat * sin_LD_sign
                         else:
@@ -1076,6 +1081,8 @@ class PREDGUID:
                         v_pred_mag2 = np.dot(v_pred, v_pred)
                         v_pred_mag = np.sqrt(v_pred_mag)
 
+                        H_pred = r_pred_mag - self.Earth_radius
+
                         rk4_nr = rk4_nr + 1
 
                     # check for atmospheric exit
@@ -1103,7 +1110,7 @@ class PREDGUID:
                     if v_pred_mag <= self.V1:
                         IND_ini = 1
                     # check for capture
-                    if IND_ini == 1 and np.linalg.norm(a_acc) >= PG_Q7 and r_dot_pred <= 0:
+                    if IND_ini == 1 and np.linalg.norm(a_pred) >= PG_Q7 and r_dot_pred <= 0:
                         # capture type solution
                         predicting = False
                         pred_capt = True
@@ -1249,6 +1256,7 @@ class PREDGUID:
         if(math.isnan( current_time)):
             self.current_time = float("NaN")
         elif( current_time != self.current_time ):
+            print(current_time, self.current_time)
             # Get the (constant) angular velocity of the Earth body
             #earth_angular_velocity = np.linalg.norm(self.earth.body_fixed_angular_velocity)
             # Get the distance between the vehicle and the Earth bodies
@@ -1257,10 +1265,10 @@ class PREDGUID:
             body_mass = self.vehicle.mass
 
             # Extract flight conditions
-            if self.vehicle_flight_conditions == None:
-                self.vehicle_flight_conditions = self.vehicle.flight_conditions
-                self.aerodynamic_angle_calculator = self.vehicle_flight_conditions.aerodynamic_angle_calculator
-                self.aerodynamic_coefficient_interface = self.vehicle_flight_conditions.aerodynamic_coefficient_interface
+            #if self.vehicle_flight_conditions == None:
+            self.vehicle_flight_conditions = self.vehicle.flight_conditions
+            self.aerodynamic_angle_calculator = self.vehicle_flight_conditions.aerodynamic_angle_calculator
+            self.aerodynamic_coefficient_interface = self.vehicle_flight_conditions.aerodynamic_coefficient_interface
 
             # Extract the current Mach number, airspeed, and air density from the flight conditions
             mach_number = self.vehicle_flight_conditions.mach_number
@@ -1284,6 +1292,8 @@ class PREDGUID:
             current_force_coefficients = self.aerodynamic_coefficient_interface.current_force_coefficients
             # Extract the (constant) reference area of the vehicle
             aerodynamic_reference_area = self.aerodynamic_coefficient_interface.reference_area
+            # Extract current max L/D ratio
+            #self.MAX_LD = current_force_coefficients[2] / current_force_coefficients[0]
 
             # Get the heading, flight path, and latitude angles from the aerodynamic angle calculator
             heading = self.aerodynamic_angle_calculator.get_angle(environment.heading_angle)
@@ -1295,7 +1305,10 @@ class PREDGUID:
             ###################################################################################
 
             # if it is the first time step, run targeting sequence twice to start convergence of LATANG to correct sign
-            if current_time == 0.0:
+            if current_time == 0.0 and self.initialised == False:
+                current_force_coefficients[0] = 1.274174
+                current_force_coefficients[2] = 0.336415
+                self.initialised = True
                 initialising = True
                 counter = 0
                 while initialising:
@@ -1305,7 +1318,7 @@ class PREDGUID:
                     if not self.use_relative_velocities:
                         velocity = self.velocity_I
                     else:
-                        velocity = self.velocity_I - self.Equatorial_Earth_Rate * np.dot(np.array([0, 0, 1]), pos_unit)
+                        velocity = self.velocity_I - np.cross(np.asarray([0,0,self.Equatorial_Earth_Rate]), self.pos)
 
                     # 2. calculate parameters
                     V = np.linalg.norm(velocity)
@@ -1321,11 +1334,13 @@ class PREDGUID:
                     self.aero_force = np.linalg.norm(self.Dbar)
 
                     # 3. estimate density bias factor
-                    rho = (2 * body_mass * self.aero_force) / \
+                    rho = (2 * self.vehicle.mass * self.aero_force) / \
                           ((airspeed ** 2) * aerodynamic_reference_area * current_force_coefficients[0] * np.sqrt(
                               (1 + self.MAX_LD ** 2)))
 
+                    #print(body_mass)
                     Krho_now = rho / density
+
                     self.Krho_est = self.K_rho_filter_gain * Krho_now + (1 - self.K_rho_filter_gain) * self.Krho_est
 
                     # 4. estimate rotation of target
@@ -1341,10 +1356,16 @@ class PREDGUID:
                         angle_to_pred_target = self.Earth_rate * current_time
 
                     # 5. calculate rotated target vector, crossrange angle, and downrange to go:
-                    self.target_local_east = np.cross(np.array([0, 0, 1]), self.Target_unit_vector)
-                    self.Target_unit_vector = self.Target_vector0 / np.linalg.norm(self.Target_vector0) \
-                                              + self.Target_unit_vector * (np.cos(angle_to_pred_target) - 1) \
-                                              + self.target_local_east * np.sin(angle_to_pred_target)
+                    self.target_local_east = np.cross(np.array([0, 0, 1]), self.Target_unit_vector0)
+                    k = np.array([0, 0, 1])
+                    T = self.Target_unit_vector0 / np.linalg.norm(self.Target_unit_vector0)
+                    theta = angle_to_pred_target
+
+                    self.Target_unit_vector = (
+                            T * np.cos(theta) +
+                            np.cross(k, T) * np.sin(theta) +
+                            k * np.dot(k, T) * (1 - np.cos(theta))
+                    )
 
                     self.LATANG = np.dot(self.Target_unit_vector, np.cross(V_I_unit, pos_unit))
                     self.Theta = np.arccos(np.dot(self.Target_unit_vector, pos_unit))
@@ -1365,7 +1386,7 @@ class PREDGUID:
             if not self.use_relative_velocities:
                 velocity = self.velocity_I
             else:
-                velocity = self.velocity_I - self.Equatorial_Earth_Rate * np.dot(np.array([0,0,1]), pos_unit)
+                velocity = self.velocity_I - np.cross(np.asarray([0,0,self.Equatorial_Earth_Rate]), self.pos)
 
             # 2. calculate parameters
             V = np.linalg.norm(velocity)
@@ -1374,15 +1395,20 @@ class PREDGUID:
             self.RDOT = np.dot(velocity, pos_unit)
             UNIbar_vec = np.cross(velocity, pos_unit)
             #UNIbar = UNIbar_vec / np.linalg.norm(UNIbar_vec)
-            self.aero_force = (current_force_coefficients[0] + current_force_coefficients[2]) \
-                         * 0.5 * density * (airspeed**2) * aerodynamic_reference_area
+            self.Dbar = np.asarray(
+                [(current_force_coefficients[0] * 0.5 * density * (airspeed ** 2) * aerodynamic_reference_area),
+                 (current_force_coefficients[1] * 0.5 * density * (airspeed ** 2) * aerodynamic_reference_area),
+                 (current_force_coefficients[2] * 0.5 * density * (airspeed ** 2) * aerodynamic_reference_area)
+                 ])
+            self.aero_force = np.linalg.norm(self.Dbar)
 
             # 3. estimate density bias factor
-            rho = (2 * body_mass * self.aero_force)\
+            rho = (2 * self.vehicle.mass * self.aero_force)\
                   /((airspeed**2) * aerodynamic_reference_area * self.CD_est_init * np.sqrt((1 + self.MAX_LD**2)))
 
             Krho_now = rho / density
             self.Krho_est = self.K_rho_filter_gain * Krho_now + (1 - self.K_rho_filter_gain) * self.Krho_est
+
 
             # 4. estimate rotation of target
             if not self.use_relative_velocities:
@@ -1396,10 +1422,22 @@ class PREDGUID:
                 angle_to_pred_target = self.Earth_rate * current_time
 
             # 5. calculate rotated target vector, crossrange angle, and downrange to go:
-            self.target_local_east = np.cross(np.array([0, 0, 1]), self.Target_unit_vector)
+            '''
+            self.target_local_east = np.cross(np.array([0, 0, 1]), self.Target_unit_vector0)
             self.Target_unit_vector = self.Target_vector0 / np.linalg.norm(self.Target_vector0) \
                                       + self.Target_unit_vector * (np.cos(angle_to_pred_target) - 1) \
                                       + self.target_local_east * np.sin(angle_to_pred_target)
+            '''
+
+            k = np.array([0, 0, 1])
+            T = self.Target_unit_vector0 / np.linalg.norm(self.Target_unit_vector0)
+            theta = angle_to_pred_target
+
+            self.Target_unit_vector = (
+                    T * np.cos(theta) +
+                    np.cross(k, T) * np.sin(theta) +
+                    k * np.dot(k, T) * (1 - np.cos(theta))
+            )
 
             self.LATANG = np.dot(self.Target_unit_vector, np.cross(V_I_unit, pos_unit))
             #print(self.Target_unit_vector, pos_unit)
@@ -1454,7 +1492,7 @@ class PREDGUID:
                         self.LD_comm = self.MAX_LD
 
                     # Check if altitude rate is shallow enough to proceed to next phase
-                    if self.RDOT >= self.RDOT_PHASE2:
+                    if self.RDOT >= -self.RDOT_PHASE2:
                         # altitude rate is low enough to proceed to next phase
                         self.Phase = 2
                         print(current_time, ' Phase 2')
@@ -1485,13 +1523,14 @@ class PREDGUID:
                 # If first time through the Huntest routine, initialise some variables:
                 if self.initial_HUNTEST == False:
                     self.initial_HUNTEST = True
-                    Diff_old = 0.0
-                    V1_old = self.V1 + self.C18
+                    self.Diff_old = 0.0
+                    self.V1_old = self.V1 + self.C18
                     self.Q7 = self.Q7F
 
 
                 Const_drag = False
                 Hunting = True
+                self.HUNTEST_iteration = False
                 while Hunting:
                     # Calculate exit velocity at the end of upcontrol
                     self.ALP = 2 * self.C1 * self.A0 * self.HS / (self.ref_LD * self.V1 ** 2)
@@ -1535,6 +1574,7 @@ class PREDGUID:
                                                                  (self.CH1 * self.g_scaling) / (DHOOK * self.VL))))
 
                             self.Q7 = ((1 - (self.VL / Factor_1) ** 2) - self.ALP) / Factor_2
+                            print(self.Q7F, self.Q7, self.Q7MIN)
                             self.Q7 = np.median([self.Q7F, self.Q7, self.Q7MIN])
                             self.gamma_L = 0
 
@@ -1592,6 +1632,7 @@ class PREDGUID:
                         # Difference between predicted and desired downrange
                         Diff = self.downrange_distance - self.ASP
 
+                        print(self.HUNTEST_iteration)
                         if abs(Diff) <= self.TOL:
                             # assuming vehicle remains at current L/D, it will stay within tolerance of target position
                             # switch to upcontrol
@@ -1600,35 +1641,40 @@ class PREDGUID:
                             Hunting = False
                         else:
                             if not self.HUNTEST_iteration:
+                                print('Huntest', current_time)
                                 # An iteration through HUNTEST has not been performed yet
                                 if Diff <= 0.0:
                                     # predicted range is too far, store old values of DIFF and V1
-                                    Diff_old = Diff
-                                    V1_old = self.V1
+                                    self.Diff_old = Diff
+                                    self.V1_old = self.V1
                                     Hunting = False
                                     # Go to constant drag
                                     Const_drag = True
                                 else:
                                     # predicted range is too close, velocity should be tweaked
-                                    self.V_Corr = self.V1 - V1_old
+                                    self.V_Corr = self.V1 - self.V1_old
 
                                     # Calculate velocity correction
-                                    self.V_Corr = (self.V_Corr * Diff) / (Diff_old - Diff)
+                                    self.V_Corr = (self.V_Corr * Diff) / (self.Diff_old - Diff)
 
                                     # Limit velocity correction
                                     self.V_Corr = min(self.V_Corr, self.V_Corr_lim)
 
-                            # see if exit velocity is increased too much by correction
-                            if (self.VSAT - self.VL) <= self.V_Corr:
-                               self.V_Corr = self.V_Corr / 2
+                                # see if exit velocity is increased too much by correction
+                                if (self.VSAT - self.VL) <= self.V_Corr:
+                                    self.V_Corr = self.V_Corr / 2
 
-                            # Apply velocity correction to upcontrol starting velocity
-                            self.V1 = self.V1 + self.V_Corr
-                            self.HUNTEST_iteration = True
-                            Diff_old = Diff
+                                # Apply velocity correction to upcontrol starting velocity
+                                self.V1 = self.V1 + self.V_Corr
+                                self.HUNTEST_iteration = True
+                                self.Diff_old = Diff
+
+                            else:
+                                Hunting = False
 
                 # Constant Drag
                 if Const_drag:
+                    print('Const_drag')
                     # Calculate Constant Drag
                     self.LD_comm = (-LEQ / self.D0) + self.C16 * (self.aero_force - self.D0) - \
                             self.C17 * (self.RDOT + 2 * self.HS * self.D0 / V)
@@ -1638,12 +1684,15 @@ class PREDGUID:
                         # set L/D to neutral
                         self.LD_comm = 0.0
 
+                    Const_drag = False
+
 
             ###################################################################################
             # Upcontrol/Downcontrol phase
             ###################################################################################
 
             if self.Phase == 3:
+                #print(self.LD_comm, self.MAX_LD)
                 # Check if high-loft or low-loft
                 if not self.high_loft:
                     # low loft algorithm
@@ -1680,6 +1729,8 @@ class PREDGUID:
                     # if algorithm has run past all tests, proceed to this step
                     else:
                         # RUN PREDGUID
+
+                        #print('run predguid', current_time)
                         self.LD_comm, Diff, velmag_pred, rdot_pred = self.PredGuid()
 
                         # run NEGTEST
@@ -1737,6 +1788,7 @@ class PREDGUID:
             if self.Phase == 5:
                 # check if velocity has dropped below the quit velocity
                 if V <= self.VQUIT:
+                    print('stop steering')
                     # stop steering, command neutral L/D ratio
                     self.LD_comm = 0
                     # create bank angle command
@@ -1747,6 +1799,7 @@ class PREDGUID:
                 else:
                     # check if target has been overshot previously
                     if self.Gone_past:
+                        print('overshot')
                         # command full lift down
                         self.LD_comm = -1 * self.MAX_LD
 
@@ -1855,6 +1908,7 @@ class PREDGUID:
             self.bank_angle = RollC
             # update guidance time
             self.current_time = current_time
+            print(self.current_time)
 
 
 class STSAerodynamicGuidance:

@@ -211,7 +211,7 @@ if use_benchmark:
 ground_station = bodies.get_body("Earth").get_ground_station("LandingPad")
 ground_station_state = ground_station.station_state.get_cartesian_position(benchmark_dependent_variables_array[:, 0][-1])
 
-print(bodies.get_body("Capsule").flight_conditions.body_centered_body_fixed_state)
+#print(bodies.get_body("Capsule").flight_conditions.body_centered_body_fixed_state)
 
 print(ground_station_state)
 
