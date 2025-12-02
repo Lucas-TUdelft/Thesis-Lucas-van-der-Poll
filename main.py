@@ -202,7 +202,7 @@ if use_benchmark:
         # extract bank angle
         bank_angle = np.rad2deg(benchmark_dependent_variables_array[:, 18])
 
-        altitude_plot(bank_angle, dependent_variables_time)
+        bank_plot(bank_angle, dependent_variables_time)
 
 
 

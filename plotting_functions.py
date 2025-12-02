@@ -88,3 +88,30 @@ def latlong_plot(lat, long, lat_groundstation, long_groundstation):
     plt.show()
 
     return
+
+def bank_plot(bank_angle,t):
+    '''
+    plot the bank angle over time for the capsule
+
+    Parmeters
+    ----------
+    h : list
+        bank angle at each time step
+    t : list
+        time
+
+    Returns
+    ----------
+    none
+    '''
+
+    fig = plt.figure(figsize=(8, 8))
+    ax1 = fig.add_subplot(111)
+    ax1.plot(t,bank_angle)
+    ax1.set_xlabel('Time [s]')
+    ax1.set_ylabel('Bank Angle [deg]')
+    ax1.grid()
+    fig.tight_layout()
+    plt.show()
+
+    return
