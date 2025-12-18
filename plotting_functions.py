@@ -115,3 +115,137 @@ def bank_plot(bank_angle,t):
     plt.show()
 
     return
+
+def unprocessed_state_plot(t,states):
+    ''' Plot the unprocessed states of a propagator '''
+
+    fig = plt.figure(figsize=(8, 8))
+    ax1 = fig.add_subplot(111)
+
+    for i in range(len(states[0]) - 1):
+        label = i + 1
+        state_element = states[:,i + 1]
+        ax1.plot(t, state_element, label = label)
+        ax1.set_xlabel('Time [s]')
+        ax1.set_ylabel('Position error w.r.t. benchmark [m]')
+        ax1.grid(True, which='both', ls="-")
+        fig.tight_layout()
+    ax1.legend()
+    plt.show()
+
+    return
+
+def propagator_error_plot(t,e,labels):
+    ''' Plot the magnitude of the position error as a function of time, for all propagators '''
+
+    fig = plt.figure(figsize=(8, 8))
+    ax1 = fig.add_subplot(111)
+    linestyles = ['-','--','-',':','-','--',':']
+
+    for i in range(len(labels)):
+        label = labels[i]
+        ax1.plot(t[i], e[i], label=label, linestyle = linestyles[i])
+        ax1.semilogy()
+        ax1.set_xlabel('Time [s]')
+        ax1.set_ylabel('Position error w.r.t. benchmark [m]')
+        ax1.grid(True,which='both',ls="-")
+        ax1.legend()
+
+    fig.tight_layout()
+    plt.show()
+
+    return
+
+def altitude_comparison_plot(altitudes,times,labels):
+    ''' plot the altitude over time of various propagators '''
+
+    fig = plt.figure(figsize=(8, 8))
+    ax1 = fig.add_subplot(111)
+
+    linestyles = ['-','-','--',':']
+
+    for i in range(len(altitudes)):
+        ax1.plot(times[i], altitudes[i],label = labels[i], linestyle = linestyles[i])
+
+    ax1.set_xlabel('Time [s]', size=16)
+    ax1.set_ylabel('Altitude [m]', size=16)
+    ax1.grid(True, which='both', ls="-")
+    ax1.legend()
+    fig.tight_layout()
+    plt.show()
+
+    return
+
+def aero_comparison_plot(aeros,times,labels):
+    ''' plot the aero-g load over time of various propagators '''
+
+    fig = plt.figure(figsize=(8, 8))
+    ax1 = fig.add_subplot(111)
+
+    linestyles = ['-','-','--',':']
+
+    for i in range(len(aeros)):
+        ax1.plot(times[i], aeros[i],label = labels[i], linestyle = linestyles[i])
+
+    ax1.set_xlabel('Time [s]', size=16)
+    ax1.set_ylabel('Aerodynamic g-load [-]', size=16)
+    ax1.grid(True, which='both', ls="-")
+    ax1.legend()
+    fig.tight_layout()
+    plt.show()
+
+    return
+
+def error_plot(t,e,timesteps):
+    ''' Plot the magnitude of the position error as a function of time, for all time steps '''
+
+    fig = plt.figure(figsize=(8, 8))
+    ax1 = fig.add_subplot(111)
+
+    for i in range(len(timesteps)):
+        label = 'ε = ' + str(timesteps[i])
+        ax1.plot(t[i], e[i], label=label)
+        ax1.semilogy()
+        ax1.set_xlabel('Time [s]')
+        ax1.set_ylabel('|| ε_r || [m]')
+        ax1.grid(True,which='both',ls="-")
+        ax1.legend()
+
+    fig.tight_layout()
+    plt.show()
+
+    return
+
+def time_steps_plot(timesteps,t):
+    ''' plot the time steps taken over time for the capsule '''
+
+    fig = plt.figure(figsize=(8, 8))
+    ax1 = fig.add_subplot(111)
+    ax1.plot(t,timesteps)
+    ax1.set_xlabel('Time [s]')
+    ax1.set_ylabel('Time Step [s]')
+    ax1.grid()
+    fig.tight_layout()
+    plt.show()
+
+    return
+
+def integrator_propagator_plot(evaluation_numbers,maximum_errors,labels):
+    ''' Plot the maximum error against the number of function evaluations,
+     for each integrator & propagator combination '''
+
+    fig = plt.figure(figsize=(8, 8))
+    ax1 = fig.add_subplot(111)
+
+    for i in range(len(evaluation_numbers)):
+        ax1.loglog(evaluation_numbers[i],maximum_errors[i],label = labels[i])
+        ax1.scatter(evaluation_numbers[i],maximum_errors[i])
+
+    ax1.set_xlabel('Number of Function Evaluations [-]', size=16)
+    ax1.set_ylabel('Maximum Error [m]', size=16)
+    ax1.grid(True, which='both', ls="-")
+    ax1.legend()
+    fig.tight_layout()
+    plt.show()
+
+    return

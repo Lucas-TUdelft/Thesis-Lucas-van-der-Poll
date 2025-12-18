@@ -272,11 +272,11 @@ def get_initial_state(simulation_start_epoch: float,
     """
     # Set initial spherical elements
     radial_distance = spice_interface.get_average_radius('Earth') + 157.7E3
-    latitude = np.deg2rad(0.0)
-    longitude = np.deg2rad(68.75)
+    latitude = np.deg2rad(5.3)
+    longitude = np.deg2rad(-50.0)
     speed = 7.50E3
     flight_path_angle = np.deg2rad(-0.8)
-    heading_angle = np.deg2rad(34.37)
+    heading_angle = np.deg2rad(95.0)
 
     # Convert spherical elements to body-fixed cartesian coordinates
     initial_cartesian_state_body_fixed = element_conversion.spherical_to_cartesian_elementwise(
@@ -502,6 +502,11 @@ def generate_benchmarks(benchmark_step_size,
         propagation_setup.integrator.CoefficientSets.rkdp_87)
     benchmark_propagator_settings.print_settings.print_dependent_variable_indices = True
 
+    # Recreate the guidance object
+    aerodynamic_guidance_object = PREDGUID(bodies)
+    bodies.get_body('Capsule').rotation_model.reset_aerodynamic_angle_function(
+        aerodynamic_guidance_object.getAerodynamicAngles)
+
     first_dynamics_simulator = numerical_simulation.create_dynamics_simulator(
         bodies,
         benchmark_propagator_settings )
@@ -511,6 +516,11 @@ def generate_benchmarks(benchmark_step_size,
         second_benchmark_step_size,
         propagation_setup.integrator.CoefficientSets.rkdp_87)
     benchmark_propagator_settings.print_settings.print_dependent_variable_indices = False
+
+    # Recreate the guidance object
+    aerodynamic_guidance_object = PREDGUID(bodies)
+    bodies.get_body('Capsule').rotation_model.reset_aerodynamic_angle_function(
+        aerodynamic_guidance_object.getAerodynamicAngles)
 
     second_dynamics_simulator = numerical_simulation.create_dynamics_simulator(
         bodies,
@@ -624,7 +634,6 @@ class PREDGUID:
         # 1: Pre-entry attitude hold and initial roll
 
         self.Phase = 1
-        print('Phase 1')
 
         # Define condition flags:
         self.use_relative_velocities = False # Use inertial velocities: False, use relative velocites: True
@@ -1253,10 +1262,9 @@ class PREDGUID:
 
     # call at each simulation step to get bank angle
     def updateGuidance(self, current_time: float):
-        if(math.isnan( current_time)):
-            self.current_time = float("NaN")
-        elif( current_time != self.current_time ):
-            print(current_time, self.current_time)
+        if not np.isfinite(current_time):
+            return
+        if self.Phase >= 0:
             # Get the (constant) angular velocity of the Earth body
             #earth_angular_velocity = np.linalg.norm(self.earth.body_fixed_angular_velocity)
             # Get the distance between the vehicle and the Earth bodies
@@ -1632,7 +1640,6 @@ class PREDGUID:
                         # Difference between predicted and desired downrange
                         Diff = self.downrange_distance - self.ASP
 
-                        print(self.HUNTEST_iteration)
                         if abs(Diff) <= self.TOL:
                             # assuming vehicle remains at current L/D, it will stay within tolerance of target position
                             # switch to upcontrol
@@ -1641,7 +1648,6 @@ class PREDGUID:
                             Hunting = False
                         else:
                             if not self.HUNTEST_iteration:
-                                print('Huntest', current_time)
                                 # An iteration through HUNTEST has not been performed yet
                                 if Diff <= 0.0:
                                     # predicted range is too far, store old values of DIFF and V1
@@ -1799,7 +1805,6 @@ class PREDGUID:
                 else:
                     # check if target has been overshot previously
                     if self.Gone_past:
-                        print('overshot')
                         # command full lift down
                         self.LD_comm = -1 * self.MAX_LD
 
@@ -1809,6 +1814,7 @@ class PREDGUID:
                         self.Gone_past = True
                         # command full lift down
                         self.LD_comm = -1 * self.MAX_LD
+                        print('overshot')
                     else:
                         # interpolate values based on velocity
                         V_fps = V / 3.281
@@ -1908,7 +1914,6 @@ class PREDGUID:
             self.bank_angle = RollC
             # update guidance time
             self.current_time = current_time
-            print(self.current_time)
 
 
 class STSAerodynamicGuidance:

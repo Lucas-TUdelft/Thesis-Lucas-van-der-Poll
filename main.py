@@ -65,9 +65,15 @@ termination_altitude = 30.0E3  # m
 # Define settings for celestial bodies
 bodies_to_create = ['Earth']
 # Define Ground station settings (Paris)
-station_altitude = 35.0 # m
-station_latitude = 48.8575 # deg
-station_longitude = 2.3514 # deg
+target_location = 'Paris'
+if target_location == 'Paris':
+    station_altitude = 35.0 # m
+    station_latitude = 48.8575 # deg
+    station_longitude = 2.3514 # deg
+elif target_location == 'Cabo Verde':
+    station_altitude = 37.0 # m
+    station_latitude = 14.9198 # deg
+    station_longitude = -23.5073 # deg
 # Define coordinate system
 global_frame_origin = 'Earth'
 global_frame_orientation = 'J2000'
