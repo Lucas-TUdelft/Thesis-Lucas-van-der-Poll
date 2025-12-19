@@ -150,12 +150,14 @@ def set_capsule_shape_parameters(shape_parameters: list,
     # Apply constraint
     if shape_parameters[2] >= length_limit:
         shape_parameters[2] = length_limit
+        print('test')
 
     # Create capsule
     new_capsule = geometry.Capsule(*shape_parameters[0:5])
     # Compute new body mass
-    new_capsule_mass = capsule_density * new_capsule.volume
+    # new_capsule_mass = capsule_density * new_capsule.volume
     # Set capsule mass
+    new_capsule_mass = 19057.8  # kg
     bodies.get_body('Capsule').set_constant_mass(new_capsule_mass)
 
     # Create aerodynamic interface from shape parameters (this calls the local inclination analysis)

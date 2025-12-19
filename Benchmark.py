@@ -495,6 +495,10 @@ if integrator_propagator_analysis:
         # Extract benchmark states (first one is run with benchmark_time_step; second with 2.0*benchmark_time_step)
         first_benchmark_state_history = benchmark_list[0]
         second_benchmark_state_history = benchmark_list[1]
+
+        benchmark_dependent_variables_array = result2array(benchmark_list[2])
+        benchmark_altitude = benchmark_dependent_variables_array[:, 2]
+        benchmark_time = benchmark_list[2].keys()
         # Create state interpolator for first benchmark
         benchmark_state_interpolator = interpolators.create_one_dimensional_vector_interpolator(
             first_benchmark_state_history,
@@ -558,7 +562,11 @@ if integrator_propagator_analysis:
         # Define list of propagators
         available_propagators = [propagation_setup.propagator.cowell,
                                  propagation_setup.propagator.encke,
-                                 propagation_setup.propagator.gauss_modified_equinoctial]
+                                 propagation_setup.propagator.gauss_keplerian,
+                                 propagation_setup.propagator.gauss_modified_equinoctial,
+                                 propagation_setup.propagator.unified_state_model_quaternions,
+                                 propagation_setup.propagator.unified_state_model_modified_rodrigues_parameters,
+                                 propagation_setup.propagator.unified_state_model_exponential_map]
 
         # Define settings to loop over
         number_of_propagators = len(available_propagators)
@@ -585,7 +593,7 @@ if integrator_propagator_analysis:
             # Loop over different integrators
             for integrator_index in range(number_of_integrators):
 
-                number_of_integrator_step_size_settings = 5
+                number_of_integrator_step_size_settings = 7
 
                 maximum_errors_integrator = []
                 evaluation_numbers_integrator = []
@@ -655,15 +663,19 @@ if integrator_propagator_analysis:
                         # Initialize containers
                         state_difference = dict()
 
+                        t_start = max(list(benchmark_time)[0], list(state_history.keys())[0])
+                        t_end = min(list(benchmark_time)[-1], list(state_history.keys())[-1])
+
                         # Loop over the propagated states and use the benchmark interpolators
                         # benchmark states (or dependent variables), producing a warning. Be aware of it!
                         for epoch in state_history.keys():
-                            try:
-                                state_difference[epoch] = state_history[
-                                                              epoch] - benchmark_state_interpolator.interpolate(
-                                    epoch)
-                            except:
-                                skipped = True
+                            if epoch >= t_start and epoch <= t_end:
+                                try:
+                                    state_difference[epoch] = state_history[
+                                                                epoch] - benchmark_state_interpolator.interpolate(
+                                        epoch)
+                                except:
+                                    skipped = True
 
                         state_difference_array = result2array(state_difference)
                         state_difference_time = state_difference.keys()
@@ -680,17 +692,52 @@ if integrator_propagator_analysis:
                         position_errors_integrator.append(e_r_mag)
                         times_integrator.append(state_difference_time)
 
-                        '''
-                        if propagator_index == 0:
-                            if integrator_index == 1:
-                                if step_size_index == 1:
+                        labels = [['Cowell, RK4(5) variable step', 'Cowell, RK5(6) variable step',
+                                   'Cowell, RKDP7(8) variable step',
+                                   'Cowell, RKF12(10) variable step', 'Cowell, RK4(5) fixed step',
+                                   'Cowell, RK5(6) fixed step',
+                                   'Cowell, RKDP7(8) fixed step', 'Cowell, RKF12(10) fixed step'],
+                                  ['Encke, RK4(5) variable step', 'Encke, RK5(6) variable step',
+                                   'Encke, RKDP7(8) variable step',
+                                   'Encke, RKF12(10) variable step', 'Encke, RK4(5) fixed step',
+                                   'Encke, RK5(6) fixed step',
+                                   'Encke, RKDP7(8) fixed step', 'Encke, RKF12(10) fixed step'],
+                                  ['Kepler, RK4(5) variable step', 'Kepler, RK5(6) variable step',
+                                   'Kepler, RKDP7(8) variable step',
+                                   'Kepler, RKF12(10) variable step', 'Kepler, RK4(5) fixed step',
+                                   'Kepler, RK5(6) fixed step',
+                                   'Kepler, RKDP7(8) fixed step', 'Kepler, RKF12(10) fixed step'],
+                                  ['MEE, RK4(5) variable step', 'MEE, RK5(6) variable step',
+                                   'MEE, RKDP7(8) variable step',
+                                   'MEE, RKF12(10) variable step', 'MEE, RK4(5) fixed step', 'MEE, RK5(6) fixed step',
+                                   'MEE, RKDP7(8) fixed step', 'MEE, RKF12(10) fixed step'],
+                                  ['USM7, RK4(5) variable step', 'USM7, RK5(6) variable step',
+                                   'USM7, RKDP7(8) variable step',
+                                   'USM7, RKF12(10) variable step', 'USM7, RK4(5) fixed step',
+                                   'USM7, RK5(6) fixed step',
+                                   'USM7, RKDP7(8) fixed step', 'USM7, RKF12(10) fixed step'],
+                                  ['USM6, RK4(5) variable step', 'USM6, RK5(6) variable step',
+                                   'USM6, RKDP7(8) variable step',
+                                   'USM6, RKF12(10) variable step', 'USM6, RK4(5) fixed step',
+                                   'USM6, RK5(6) fixed step',
+                                   'USM6, RKDP7(8) fixed step', 'USM6, RKF12(10) fixed step'],
+                                  ['USM-EM, RK4(5) variable step', 'USM-EM, RK5(6) variable step',
+                                   'USM-EM, RKDP7(8) variable step',
+                                   'USM-EM, RKF12(10) variable step', 'USM-EM, RK4(5) fixed step',
+                                   'USM-EM, RK5(6) fixed step',
+                                   'USM-EM, RKDP7(8) fixed step', 'USM-EM, RKF12(10) fixed step']
+                                  ]
+
+                        if propagator_index == 3:
+                            if integrator_index == 4:
+                                if step_size_index == 4:
 
                                     time_steps = []
                                     time_list = [t for t in state_difference_time]
 
                                     depependent_variable_array = result2array(dependent_variable_history)
                                     mach = depependent_variable_array[:, 1]
-                                    altitude = depependent_variable_array[:, 2]
+                                    altitude = [dependent_variable_history[t][1] for t in state_difference_time]
                                     aero_g = depependent_variable_array[:, 3]
 
                                     for i in range(len(time_list)):
@@ -699,7 +746,22 @@ if integrator_propagator_analysis:
                                         else:
                                             delta_t = time_list[i] - time_list[i - 1]
                                         time_steps.append(delta_t)
-                        '''
+
+                                    if integrator_index < 4:
+                                        time_step_setting = 10.0 ** (-12.0 + step_size_index)
+                                    else:
+                                        time_step_setting = 0.5 * (2 ** step_size_index)
+
+                                    altitude_comparison_plot(
+                                        [benchmark_altitude,altitude],
+                                        [benchmark_time,state_difference_time],
+                                        ['benchmark',
+                                         labels[propagator_index][integrator_index] + ' ' +  str(time_step_setting)]
+                                    )
+                                    error_plot([state_difference_time],[e_r_mag],
+                                               [labels[propagator_index][integrator_index] +
+                                                ' ' + str(time_step_setting)])
+
 
                         # Write differences with respect to the benchmarks to files
                         if write_results_to_file:
@@ -711,12 +773,13 @@ if integrator_propagator_analysis:
                             dependent_difference = dict()
                             # Loop over the propagated dependent variables and use the benchmark interpolators
                             for epoch in dependent_variable_history.keys():
-                                try:
-                                    dependent_difference[epoch] = dependent_variable_history[
-                                                                      epoch] - benchmark_dependent_variable_interpolator.interpolate(
-                                        epoch)
-                                except:
-                                    skipped = True
+                                if epoch >= t_start and epoch <= t_end:
+                                    try:
+                                        dependent_difference[epoch] = dependent_variable_history[
+                                                                        epoch] - benchmark_dependent_variable_interpolator.interpolate(
+                                            epoch)
+                                    except:
+                                        skipped = True
                                 # Write differences with respect to the benchmarks to files
                             if write_results_to_file:
                                 save2txt(dependent_difference, 'dependent_variable_difference_wrt_benchmark.dat',
@@ -740,15 +803,6 @@ if integrator_propagator_analysis:
             if elem > 1:
                 print(info + ': ' + str(result))
 
-    labels = [['Cowell, RK4(5) variable step', 'Cowell, RK5(6) variable step', 'Cowell, RKDP7(8) variable step',
-               'Cowell, RKF12(10) variable step', 'Cowell, RK4(5) fixed step', 'Cowell, RK5(6) fixed step',
-               'Cowell, RKDP7(8) fixed step', 'Cowell, RKF12(10) fixed step'],
-              ['Encke, RK4(5) variable step', 'Encke, RK5(6) variable step', 'Encke, RKDP7(8) variable step',
-               'Encke, RKF12(10) variable step', 'Encke, RK4(5) fixed step', 'Encke, RK5(6) fixed step',
-               'Encke, RKDP7(8) fixed step', 'Encke, RKF12(10) fixed step'],
-              ['MEE, RK4(5) variable step', 'MEE, RK5(6) variable step', 'MEE, RKDP7(8) variable step',
-               'MEE, RKF12(10) variable step', 'MEE, RK4(5) fixed step', 'MEE, RK5(6) fixed step',
-               'MEE, RKDP7(8) fixed step', 'MEE, RKF12(10) fixed step']]
 
     for i in range(len(evaluation_numbers)):
         integrator_propagator_plot(evaluation_numbers[i], maximum_errors[i], labels[i])
