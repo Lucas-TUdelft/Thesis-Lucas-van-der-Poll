@@ -20,7 +20,7 @@ from tudatpy.kernel.math import interpolators
 from tudatpy.util import result2array
 
 # Problem-specific imports
-import Simulation_setup_utilities as Util
+import Benchmark_utilities as Util
 
 ###########################################################################
 # DEFINE GLOBAL SETTINGS ##################################################

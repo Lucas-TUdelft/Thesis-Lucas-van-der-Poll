@@ -162,7 +162,7 @@ def altitude_comparison_plot(altitudes,times,labels):
     fig = plt.figure(figsize=(8, 8))
     ax1 = fig.add_subplot(111)
 
-    linestyles = ['-','-','--',':']
+    linestyles = ['-','-','--',':','--',':',':','--',':',':']
 
     for i in range(len(altitudes)):
         ax1.plot(times[i], altitudes[i],label = labels[i], linestyle = linestyles[i])
@@ -182,7 +182,7 @@ def aero_comparison_plot(aeros,times,labels):
     fig = plt.figure(figsize=(8, 8))
     ax1 = fig.add_subplot(111)
 
-    linestyles = ['-','-','--',':']
+    linestyles = ['-','-','--',':','--',':',':','--',':',':']
 
     for i in range(len(aeros)):
         ax1.plot(times[i], aeros[i],label = labels[i], linestyle = linestyles[i])
@@ -248,4 +248,23 @@ def integrator_propagator_plot(evaluation_numbers,maximum_errors,labels):
     fig.tight_layout()
     plt.show()
 
+    return
+
+def state_difference_plot(differences,times,labels):
+    ''' plot the difference in states between a two propagations '''
+
+    fig = plt.figure(figsize=(8, 8))
+    ax1 = fig.add_subplot(111)
+
+    for i in range(len(differences)):
+        ax1.plot(times[i], differences[i], label = labels[i])
+
+    #ax1.semilogy()
+    ax1.set_xlabel('Time [s]')
+    ax1.set_ylabel('position error [m]')
+    ax1.grid()
+    ax1.legend()
+
+    fig.tight_layout()
+    plt.show()
     return

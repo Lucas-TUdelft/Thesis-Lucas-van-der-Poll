@@ -30,7 +30,7 @@ import EntryUtilities as Util
 spice_interface.load_standard_kernels()
 
 # Choose whether benchmark is run
-use_benchmark = True
+use_benchmark = False
 run_integrator_analysis = False
 
 # Choose whether output of the propagation is written to files
