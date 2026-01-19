@@ -654,7 +654,7 @@ class PREDGUID:
         self.g_scaling = 9.81456 # m/s^2
         self.MAX_LD = 0.25 # -
         self.K_rho_filter_gain = 0.05 # -
-        self.Earth_rate = 0.0000729211505 # rad/s
+        self.Earth_rate = 7.2921159 * 10**-5 # rad/s
         self.Earth_radius = 6378140 # m
         self.VSAT = 7853.53693704 # m/s
         self.V_MIN = self.VSAT/2 # m/s
