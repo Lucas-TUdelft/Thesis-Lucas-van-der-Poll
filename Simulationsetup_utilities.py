@@ -364,7 +364,7 @@ def get_propagator_settings(shape_parameters,
             'Sun': [propagation_setup.acceleration.point_mass_gravity()]
         }
     '''
-
+    '''
     if model_choice == 0:
         acceleration_settings_on_vehicle = {
             'Earth': [propagation_setup.acceleration.spherical_harmonic_gravity(15,15),
@@ -425,6 +425,66 @@ def get_propagator_settings(shape_parameters,
         acceleration_settings_on_vehicle = {
             'Earth': [propagation_setup.acceleration.spherical_harmonic_gravity(10,10),
                       propagation_setup.acceleration.aerodynamic()],
+            'Moon': [propagation_setup.acceleration.point_mass_gravity()],
+            'Sun': [propagation_setup.acceleration.point_mass_gravity()]
+        }
+    '''
+
+    # Spherical Harmonics test no atmosphere
+
+    if model_choice == 0:
+        acceleration_settings_on_vehicle = {
+            'Earth': [propagation_setup.acceleration.spherical_harmonic_gravity(15,15)],
+            'Moon': [propagation_setup.acceleration.point_mass_gravity()],
+            'Sun': [propagation_setup.acceleration.point_mass_gravity()]
+        }
+    if model_choice == 1:
+        acceleration_settings_on_vehicle = {
+            'Earth': [propagation_setup.acceleration.spherical_harmonic_gravity(2,0)],
+            'Moon': [propagation_setup.acceleration.point_mass_gravity()],
+            'Sun': [propagation_setup.acceleration.point_mass_gravity()]
+        }
+    if model_choice == 2:
+        acceleration_settings_on_vehicle = {
+            'Earth': [propagation_setup.acceleration.spherical_harmonic_gravity(2,2)],
+            'Moon': [propagation_setup.acceleration.point_mass_gravity()],
+            'Sun': [propagation_setup.acceleration.point_mass_gravity()]
+        }
+    if model_choice == 3:
+        acceleration_settings_on_vehicle = {
+            'Earth': [propagation_setup.acceleration.spherical_harmonic_gravity(3,0)],
+            'Moon': [propagation_setup.acceleration.point_mass_gravity()],
+            'Sun': [propagation_setup.acceleration.point_mass_gravity()]
+        }
+    if model_choice == 4:
+        acceleration_settings_on_vehicle = {
+            'Earth': [propagation_setup.acceleration.spherical_harmonic_gravity(4,0)],
+            'Moon': [propagation_setup.acceleration.point_mass_gravity()],
+            'Sun': [propagation_setup.acceleration.point_mass_gravity()]
+        }
+    if model_choice == 5:
+        acceleration_settings_on_vehicle = {
+            'Earth': [propagation_setup.acceleration.spherical_harmonic_gravity(4,4)],
+            'Moon': [propagation_setup.acceleration.point_mass_gravity()],
+            'Sun': [propagation_setup.acceleration.point_mass_gravity()]
+        }
+    if model_choice == 6:
+        acceleration_settings_on_vehicle = {
+            'Earth': [propagation_setup.acceleration.spherical_harmonic_gravity(6,6)],
+            'Moon': [propagation_setup.acceleration.point_mass_gravity()],
+            'Sun': [propagation_setup.acceleration.point_mass_gravity()]
+        }
+    if model_choice == 7:
+        acceleration_settings_on_vehicle = {
+            'Earth': [propagation_setup.acceleration.spherical_harmonic_gravity(8,8)],
+            'Moon': [propagation_setup.acceleration.point_mass_gravity()],
+            'Sun': [propagation_setup.acceleration.point_mass_gravity()]
+        }
+
+    #
+    if model_choice == 8:
+        acceleration_settings_on_vehicle = {
+            'Earth': [propagation_setup.acceleration.spherical_harmonic_gravity(10,10)],
             'Moon': [propagation_setup.acceleration.point_mass_gravity()],
             'Sun': [propagation_setup.acceleration.point_mass_gravity()]
         }
