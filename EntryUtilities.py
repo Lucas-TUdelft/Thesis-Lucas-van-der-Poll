@@ -2001,3 +2001,62 @@ class STSAerodynamicGuidance:
                 # If the cos is in the correct range, return the computed bank angle
                 self.bank_angle = np.arccos(cosine_of_bank_angle)
             self.current_time = current_time
+
+class ApolloGuidance:
+
+    def __init__(self, ref_data: apollo_utils.ApolloReferenceData, K: float = 1, bodies: environment.SystemOfBodies):
+        self.ref_data = ref_data
+        self.K = K
+
+        # Extract the STS and Earth bodies
+        self.vehicle = bodies.get_body("Capsule")
+        self.earth = bodies.get_body("Earth")
+        self.aerodynamic_angle_calculator = self.vehicle_flight_conditions.aerodynamic_angle_calculator
+
+        # Constants
+        self.rho0 = 1.225 # kg/m3
+        self.Hs = 7200 # m
+        self.reference_area = 60.82  # m^2
+        self.mass = 19057.8 # kg
+        self.Cd_typical = 1.27
+        self.beta = self.mass / (self.Cd_typical * self.reference_area)
+        self.min_D_m = 0.05 * 9.81 # - (0.05 g's)
+
+    def getAerodynamicAngles(self, current_time: float):
+        self.updateGuidance(current_time)
+        return np.array([self.angle_of_attack, 0.0, self.bank_angle])
+
+    def updateGuidance(self, current_time: float):
+
+        # extract guidance state
+        h = self.vehicle.flight_conditions.altitude
+        v = self.vehicle.flight_conditions.airspeed
+        gamma = self.aerodynamic_angle_calculator.get_angle(
+            environment_setup.aerodynamic_coefficients.AerodynamicsReferenceFrameAngles.flight_path_angle)
+
+
+        rho = self.rho0 * exp(-h / self.Hs) # current density
+        D_m = rho * (v**2) / (2 * self.beta) # (D/m)
+
+        # compute reference bank angle
+        phi = np.deg2rad(90)
+
+        # Wait for sensed G foroce to exceed threshold before starting
+        # closed loop guidance
+        if abs(D_m) < self.min_D_m and h > 60e3:
+            return phi
+
+        ref_data_row = self.ref_data.get_row_by_velocity(v)
+
+        s_ref = ref_data_row[2]
+        F1, F2, F3, D_m_ref, hdot_ref = ref_data_row[5:10]
+
+        hdot = v * sin(gamma)
+
+        # Add correction based on Apollo guidance algorithm
+        dphi = self.K * (-(s - s_ref) - F2 * (hdot - hdot_ref) - F1 * (D_m - D_m_ref)) / F3
+
+        phi = phi + dphi
+        phi = abs(phi)
+        phi = max(min(phi, np.pi), 0)
+        return phi
