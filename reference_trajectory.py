@@ -14,12 +14,7 @@ round2=lambda x,y=None: round(x+1e-15,y)
 def reference_bank_angle(t, X, params):
     """Generates the reference bank angle profile"""
     v = X[2]
-    if v >= 3500:
-        return np.deg2rad(75);
-    elif v <= 1500:
-        return np.deg2rad(50);
-    else:
-        return np.deg2rad(50 + (75-50)*(v-1500)/(3500-1500))
+    return np.deg2rad(20.0)
 
 
 def traj_eom(t: float,
@@ -213,9 +208,9 @@ class ApolloReferenceData:
         return ApolloReferenceData(X_and_lam, u, tspan, params)
 
 # Initial conditions
-h0 = 157.7E3 # Entry altitude
-V0 = 6927  # Entry velocity
-gamma0_deg = -0.8 # Entry flight path angle
+h0 = 79.4E3 # Entry altitude
+V0 = 7003  # Entry velocity
+gamma0_deg = -3.21 # Entry flight path angle
 s0 = 0
 
 # Model params
@@ -226,16 +221,16 @@ params = {'H': 7200,
               'R_m': 6371e3,
               'g': 9.81}
 
-# Terminal velocity
-v_f = 630
+# Terminal altitude
+h_f = 30000
 
 gamma0 = np.deg2rad(gamma0_deg)
 X0 = np.array([h0, s0, V0, gamma0])
 t0 = 0
-tf = 630.
-tspan = np.linspace(t0, tf, 101)
+tf = 320
+tspan = np.linspace(t0, tf, 1001)
 
-ref_traj = simulate_entry_trajectory(traj_eom, t0, tf, X0, 2, v_f, params, reference_bank_angle, tspan)
+ref_traj = simulate_entry_trajectory(traj_eom, t0, tf, X0, 0, h_f, params, reference_bank_angle, tspan)
 
 plt.plot(ref_traj.X[:,2]/1e3, ref_traj.X[:,0]/1e3)
 plt.xlabel('V [km/s]')
@@ -270,6 +265,8 @@ np.set_printoptions(suppress=True)
 # Test loading and saving of data
 apollo_ref = ApolloReferenceData(X_and_lam, ref_traj.u, ref_traj.t, params)
 apollo_ref.save('apollo_data_vref.npz')
+print("gamma[0] =", X_and_lam[0,3])
+print("gamma[0] in deg =", np.rad2deg(X_and_lam[0,3]))
 
 # Load data back and check that it matches the original
 ref = ApolloReferenceData.load('apollo_data_vref.npz')

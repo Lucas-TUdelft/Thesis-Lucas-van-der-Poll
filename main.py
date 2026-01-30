@@ -5,6 +5,8 @@
 # General imports
 import os
 import numpy as np
+
+import apollo_utils
 from plotting_functions import *
 
 # Tudatpy imports
@@ -30,7 +32,7 @@ import EntryUtilities as Util
 spice_interface.load_standard_kernels()
 
 # Choose whether benchmark is run
-use_benchmark = False
+use_benchmark = True
 run_integrator_analysis = False
 
 # Choose whether output of the propagation is written to files
@@ -102,7 +104,8 @@ Util.add_capsule_to_body_system(bodies,
 # Create rotation model based on aerodynamic guidance
 environment_setup.add_flight_conditions(bodies, 'Capsule', 'Earth')
 
-aerodynamic_guidance_object = Util.PREDGUID(bodies)
+#aerodynamic_guidance_object = Util.PREDGUID(bodies)
+aerodynamic_guidance_object = Util.ApolloGuidance.from_file('apollo_data_vref.npz', bodies, K=1)
 rotation_model_settings = environment_setup.rotation_model.aerodynamic_angle_based(
     'Earth', '', 'BodyFixed', aerodynamic_guidance_object.getAerodynamicAngles )
 environment_setup.add_rotation_model( bodies, 'Capsule', rotation_model_settings )

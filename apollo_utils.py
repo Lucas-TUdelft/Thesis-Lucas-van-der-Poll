@@ -64,6 +64,43 @@ class ApolloReferenceData:
         index = min(dist_to_v) == dist_to_v
         return self.data[index, :][0]
 
+    def get_row_by_velocity_interpolation(self, v: float):
+        """
+        Returns interpolated data from rows closest to given velocity
+        """
+        all_v = self.data[:, 3]
+        dist_to_v = np.abs(all_v - v)
+        index = np.argmin(dist_to_v)
+
+        if index == 0 and v >= all_v[0]:
+            return self.data[index, :][0]
+        elif index == (len(all_v) - 1) and v <= all_v[-1]:
+            return self.data[index, :][0]
+        elif v >= all_v[index]:
+            lower_index = index
+            upper_index = index - 1
+        else:
+            upper_index = index
+            lower_index = index + 1
+
+        data_row = []
+
+        for i in range(len(self.data[index, :][0])):
+            data_row_i = np.interp(v, [all_v[lower_index], all_v[upper_index]],
+                                   [self.data[lower_index, :][0][i], self.data[upper_index, :][0][i]])
+            data_row.append(data_row_i)
+
+        return self.data[index, :][0]
+
+    def get_row_by_downrange(self, s: float):
+        """
+        Returns data row closest to given downrange
+        """
+        all_s = self.data[:, 2]
+        dist_to_s = np.abs(all_s - s)
+        index = min(dist_to_s) == dist_to_s
+        return self.data[index, :][0]
+
     def save(self, filename: str):
         """Saves the reference trajectory data to a file"""
         np.savez(filename, X_and_lam=self.X_and_lam, u=self.u, tspan=self.tspan, params=self.params)

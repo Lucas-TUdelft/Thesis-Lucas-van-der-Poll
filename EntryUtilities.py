@@ -6,6 +6,7 @@
 import math
 import os
 import numpy as np
+import apollo_utils
 
 # Tudatpy imports
 import tudatpy
@@ -275,7 +276,7 @@ def get_initial_state(simulation_start_epoch: float,
     radial_distance = spice_interface.get_average_radius('Earth') + 157.7E3
     latitude = np.deg2rad(5.3)
     longitude = np.deg2rad(-50.0)
-    speed = 7.50E3
+    speed = 6.93E3
     flight_path_angle = np.deg2rad(-0.8)
     heading_angle = np.deg2rad(95.0)
 
@@ -504,7 +505,7 @@ def generate_benchmarks(benchmark_step_size,
     benchmark_propagator_settings.print_settings.print_dependent_variable_indices = True
 
     # Recreate the guidance object
-    aerodynamic_guidance_object = PREDGUID(bodies)
+    aerodynamic_guidance_object = ApolloGuidance.from_file('apollo_data_vref.npz', bodies, K=1)
     bodies.get_body('Capsule').rotation_model.reset_aerodynamic_angle_function(
         aerodynamic_guidance_object.getAerodynamicAngles)
 
@@ -519,7 +520,7 @@ def generate_benchmarks(benchmark_step_size,
     benchmark_propagator_settings.print_settings.print_dependent_variable_indices = False
 
     # Recreate the guidance object
-    aerodynamic_guidance_object = PREDGUID(bodies)
+    aerodynamic_guidance_object = ApolloGuidance.from_file('apollo_data_vref.npz', bodies, K=1)
     bodies.get_body('Capsule').rotation_model.reset_aerodynamic_angle_function(
         aerodynamic_guidance_object.getAerodynamicAngles)
 
@@ -2004,14 +2005,17 @@ class STSAerodynamicGuidance:
 
 class ApolloGuidance:
 
-    def __init__(self, ref_data: apollo_utils.ApolloReferenceData, K: float = 1, bodies: environment.SystemOfBodies):
+    def __init__(self, ref_data: apollo_utils.ApolloReferenceData, bodies: environment.SystemOfBodies, K: float = 1):
         self.ref_data = ref_data
         self.K = K
 
         # Extract the STS and Earth bodies
         self.vehicle = bodies.get_body("Capsule")
         self.earth = bodies.get_body("Earth")
+        self.vehicle_flight_conditions = self.vehicle.flight_conditions
         self.aerodynamic_angle_calculator = self.vehicle_flight_conditions.aerodynamic_angle_calculator
+        self.initialised = False
+        self.first_loop = True
 
         # Constants
         self.rho0 = 1.225 # kg/m3
@@ -2020,7 +2024,19 @@ class ApolloGuidance:
         self.mass = 19057.8 # kg
         self.Cd_typical = 1.27
         self.beta = self.mass / (self.Cd_typical * self.reference_area)
-        self.min_D_m = 0.05 * 9.81 # - (0.05 g's)
+        self.min_D_m = 0.2 * 9.81 # - (0.2 g's)
+        self.Earth_radius = 6371 * 10**3 # m
+        self.angle_of_attack = np.deg2rad(20) # rad
+
+        self.current_time = float("NaN")
+        self.bank_angle = 0 # rad
+
+
+    @staticmethod
+    def from_file(filename: str, bodies: environment.SystemOfBodies, K: float = 1):
+        """Loads reference data from a file and initializes a new guidance controller"""
+        ref_data = apollo_utils.ApolloReferenceData.load(filename)
+        return ApolloGuidance(ref_data, bodies, K)
 
     def getAerodynamicAngles(self, current_time: float):
         self.updateGuidance(current_time)
@@ -2028,35 +2044,68 @@ class ApolloGuidance:
 
     def updateGuidance(self, current_time: float):
 
-        # extract guidance state
-        h = self.vehicle.flight_conditions.altitude
-        v = self.vehicle.flight_conditions.airspeed
-        gamma = self.aerodynamic_angle_calculator.get_angle(
-            environment_setup.aerodynamic_coefficients.AerodynamicsReferenceFrameAngles.flight_path_angle)
+        if (math.isnan(current_time)):
+            self.current_time = float("NaN")
+        elif (current_time != self.current_time):
+
+            # extract current vehicle state
+            self.pos_earthfixed = self.vehicle.flight_conditions.body_centered_body_fixed_state[0:3]
+            self.pos_earthfixed_unit = self.pos_earthfixed / np.linalg.norm(self.pos_earthfixed)
 
 
-        rho = self.rho0 * exp(-h / self.Hs) # current density
-        D_m = rho * (v**2) / (2 * self.beta) # (D/m)
 
-        # compute reference bank angle
-        phi = np.deg2rad(90)
 
-        # Wait for sensed G foroce to exceed threshold before starting
-        # closed loop guidance
-        if abs(D_m) < self.min_D_m and h > 60e3:
-            return phi
+            # extract guidance state
+            h = self.vehicle.flight_conditions.altitude
+            v = self.vehicle.flight_conditions.airspeed
 
-        ref_data_row = self.ref_data.get_row_by_velocity(v)
 
-        s_ref = ref_data_row[2]
-        F1, F2, F3, D_m_ref, hdot_ref = ref_data_row[5:10]
+            rho = self.rho0 * np.exp(-h / self.Hs)  # current density
+            D_m = rho * (v ** 2) / (2 * self.beta)  # (D/m)
 
-        hdot = v * sin(gamma)
+            # compute reference bank angle
+            phi = np.deg2rad(90.0)
 
-        # Add correction based on Apollo guidance algorithm
-        dphi = self.K * (-(s - s_ref) - F2 * (hdot - hdot_ref) - F1 * (D_m - D_m_ref)) / F3
+            # Wait for sensed G foroce to exceed threshold before starting
+            # closed loop guidance
+            if abs(D_m) < self.min_D_m and h > 60e3:
+                self.bank_angle = phi
+                self.current_time = current_time
+            else:
+                if not self.initialised:
+                    self.pos_earthfixed0 = self.vehicle.flight_conditions.body_centered_body_fixed_state[0:3]
+                    self.pos_earthfixed0_unit = self.pos_earthfixed0 / np.linalg.norm(self.pos_earthfixed0)
+                    self.initialised = True
 
-        phi = phi + dphi
-        phi = abs(phi)
-        phi = max(min(phi, np.pi), 0)
-        return phi
+                dot_product = np.dot(self.pos_earthfixed0_unit, self.pos_earthfixed_unit)
+                dot_product = np.clip(dot_product, -1.0, 1.0)
+                s = self.Earth_radius * np.arccos(dot_product)
+                gamma = self.aerodynamic_angle_calculator.get_angle(
+                    environment.AerodynamicsReferenceFrameAngles.flight_path_angle)
+
+
+                if self.first_loop:
+                    print('h:', h, 'v:', v, 'gamma:', gamma, 't', current_time )
+                    self.first_loop = False
+                ref_data_row = self.ref_data.get_row_by_velocity(v)
+
+                s_ref = ref_data_row[2]
+                v_ref = ref_data_row[3]
+
+                F1, F2, F3, D_m_ref, hdot_ref = ref_data_row[5:10]
+
+                hdot = v * np.sin(gamma)
+                #print(v, gamma, np.sin(gamma), hdot)
+
+                # Add correction based on Apollo guidance algorithm
+                dphi = self.K * (-(s - s_ref) - F2 * (hdot - hdot_ref) - F1 * (D_m - D_m_ref)) / F3
+                #print(v, v_ref, s, s_ref, hdot, hdot_ref, D_m, D_m_ref)
+                dphi = np.clip(dphi, -np.deg2rad(5), np.deg2rad(5))
+
+                self.bank_angle = self.bank_angle + dphi
+                self.bank_angle = abs(self.bank_angle)
+                self.bank_angle = max(min(self.bank_angle, np.pi), 0)
+
+                # lateral guidance
+
+                self.current_time = current_time
