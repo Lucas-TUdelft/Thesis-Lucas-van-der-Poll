@@ -65,9 +65,9 @@ termination_altitude = 30.0E3  # m
 ###########################################################################
 
 # Define settings for celestial bodies
-bodies_to_create = ['Earth']
+bodies_to_create = ['Earth', 'Moon', 'Sun']
 # Define Ground station settings (Paris)
-target_location = 'Paris'
+target_location = 'Cabo Verde'
 if target_location == 'Paris':
     station_altitude = 35.0 # m
     station_latitude = 48.8575 # deg
@@ -76,6 +76,10 @@ elif target_location == 'Cabo Verde':
     station_altitude = 37.0 # m
     station_latitude = 14.9198 # deg
     station_longitude = -23.5073 # deg
+elif target_location == 'Natal':
+    station_altitude = 30.0  # m
+    station_latitude = -5.7842  # deg
+    station_longitude = -35.2000  # deg
 # Define coordinate system
 global_frame_origin = 'Earth'
 global_frame_orientation = 'J2000'
@@ -85,6 +89,36 @@ body_settings = environment_setup.get_default_body_settings(
     bodies_to_create,
     global_frame_origin,
     global_frame_orientation)
+
+# Earth shape
+equitorial_radius = 6378137.0
+flattening = 1 / 298.25
+body_settings.get('Earth').shape_settings = environment_setup.shape.oblate_spherical(
+    equitorial_radius, flattening)
+
+# atmosphere
+body_settings.get("Earth").atmosphere_settings = environment_setup.atmosphere.nrlmsise00()
+
+# spherical harmonic field
+body_settings.get(
+        "Earth").gravity_field_settings = environment_setup.gravity_field.predefined_spherical_harmonic(
+        environment_setup.gravity_field.ggm02c, 32)
+
+# keplerian ephemerides
+body_settings.get('Earth').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
+    'Earth', simulation_start_epoch, spice_interface.get_body_gravitational_parameter('Sun'),
+    frame_orientation='J2000')
+body_settings.get('Moon').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
+    'Moon', simulation_start_epoch, spice_interface.get_body_gravitational_parameter('Earth'),
+    frame_orientation='J2000')
+body_settings.get('Sun').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
+    'Sun', simulation_start_epoch, spice_interface.get_body_gravitational_parameter('Sun'),
+    frame_orientation='J2000')
+
+body_settings.get('Earth').rotation_model_settings = environment_setup.rotation_model.gcrs_to_itrs(
+        base_frame='J2000')
+body_settings.get('Earth').gravity_field_settings.associated_reference_frame = 'ITRS'
+
 #Util.add_capsule_settings_to_body_system(body_settings,shape_parameters,capsule_density)
 # Create bodies
 bodies = environment_setup.create_system_of_bodies(body_settings)

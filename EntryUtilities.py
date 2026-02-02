@@ -337,8 +337,10 @@ def get_propagator_settings(shape_parameters,
 
     # Define accelerations acting on capsule
     acceleration_settings_on_vehicle = {
-        'Earth': [propagation_setup.acceleration.point_mass_gravity(),
-                  propagation_setup.acceleration.aerodynamic()]
+        'Earth': [propagation_setup.acceleration.spherical_harmonic_gravity(6, 6),
+                  propagation_setup.acceleration.aerodynamic()],
+        'Moon': [propagation_setup.acceleration.point_mass_gravity()],
+        'Sun': [propagation_setup.acceleration.point_mass_gravity()]
     }
     # Create acceleration models.
     acceleration_settings = {'Capsule': acceleration_settings_on_vehicle}
@@ -2014,6 +2016,11 @@ class ApolloGuidance:
         self.earth = bodies.get_body("Earth")
         self.vehicle_flight_conditions = self.vehicle.flight_conditions
         self.aerodynamic_angle_calculator = self.vehicle_flight_conditions.aerodynamic_angle_calculator
+        ground_station = bodies.get_body("Earth").get_ground_station("LandingPad")
+        self.Target_vector0 = ground_station.station_state.get_cartesian_position(0.0)  # m
+        self.Target_vector0_unit = self.Target_vector0 / np.linalg.norm(self.Target_vector0)
+
+        # flags
         self.initialised = False
         self.first_loop = True
 
@@ -2029,7 +2036,9 @@ class ApolloGuidance:
         self.angle_of_attack = np.deg2rad(20) # rad
 
         self.current_time = float("NaN")
-        self.bank_angle = 0 # rad
+        self.bank_angle_mag = 0 # rad
+        self.bank_sign = 1.0 # [-]
+        self.bank_angle = 0.0 # rad
 
 
     @staticmethod
@@ -2075,6 +2084,10 @@ class ApolloGuidance:
                 if not self.initialised:
                     self.pos_earthfixed0 = self.vehicle.flight_conditions.body_centered_body_fixed_state[0:3]
                     self.pos_earthfixed0_unit = self.pos_earthfixed0 / np.linalg.norm(self.pos_earthfixed0)
+
+                    self.n_ref = np.cross(self.pos_earthfixed0_unit, self.Target_vector0_unit)
+                    self.n_ref_unit = self.n_ref / np.linalg.norm(self.n_ref)
+
                     self.initialised = True
 
                 dot_product = np.dot(self.pos_earthfixed0_unit, self.pos_earthfixed_unit)
@@ -2102,10 +2115,18 @@ class ApolloGuidance:
                 #print(v, v_ref, s, s_ref, hdot, hdot_ref, D_m, D_m_ref)
                 dphi = np.clip(dphi, -np.deg2rad(5), np.deg2rad(5))
 
-                self.bank_angle = self.bank_angle + dphi
-                self.bank_angle = abs(self.bank_angle)
-                self.bank_angle = max(min(self.bank_angle, np.pi), 0)
+                self.bank_angle_mag = self.bank_angle_mag + dphi
+                self.bank_angle_mag = abs(self.bank_angle_mag)
+                self.bank_angle_mag = max(min(self.bank_angle_mag, np.pi), 0)
 
                 # lateral guidance
+                self.vel_earthfixed = self.vehicle.flight_conditions.body_centered_body_fixed_state[3:6]
+                self.vel_earthfixed_unit = self.vel_earthfixed / np.linalg.norm(self.vel_earthfixed)
+
+                self.cross_track_value = np.dot(np.cross(self.vel_earthfixed_unit, self.pos_earthfixed_unit), self.n_ref)
+                if abs(self.cross_track_value) >= 1e-6:
+                    self.bank_sign = np.sign(self.cross_track_value)
+
+                self.bank_angle = self.bank_sign * self.bank_angle_mag
 
                 self.current_time = current_time
