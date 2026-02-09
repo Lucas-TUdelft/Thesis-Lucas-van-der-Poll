@@ -208,11 +208,16 @@ class ApolloReferenceData:
         return ApolloReferenceData(X_and_lam, u, tspan, params)
 
 # Initial conditions
+'''
 h0 = 79.4E3 # Entry altitude
 V0 = 7003  # Entry velocity
 gamma0_deg = -3.21 # Entry flight path angle
 s0 = 0
-
+'''
+h0 = 79834.5921022147 # Entry altitude
+V0 = 7231.196090649018  # Entry velocity
+gamma0_deg = np.rad2deg(-0.030060769201497337) # Entry flight path angle
+s0 = 0
 # Model params
 params = {'H': 7200,
               'rho0': 1.225, # kg/m^3

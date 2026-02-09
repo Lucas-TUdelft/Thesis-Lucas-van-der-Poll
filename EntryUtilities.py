@@ -117,7 +117,7 @@ def get_capsule_coefficient_interface(capsule_shape: tudatpy.kernel.math.geometr
     aero_coefficient_settings = environment_setup.aerodynamic_coefficients.tabulated_force_only_from_files(
         force_coefficient_files=aero_coefficients_files,
         reference_area=reference_area,
-        independent_variable_names=[environment.mach_number_dependent, environment.altitude_dependent]
+        independent_variable_names=[environment.altitude_dependent, environment.mach_number_dependent]
     )
 
     return aero_coefficient_settings
@@ -276,7 +276,8 @@ def get_initial_state(simulation_start_epoch: float,
     radial_distance = spice_interface.get_average_radius('Earth') + 157.7E3
     latitude = np.deg2rad(5.3)
     longitude = np.deg2rad(-50.0)
-    speed = 6.93E3
+    #speed = 6.93E3
+    speed = 7200
     flight_path_angle = np.deg2rad(-0.8)
     heading_angle = np.deg2rad(95.0)
 
@@ -503,7 +504,7 @@ def generate_benchmarks(benchmark_step_size,
     #    propagation_setup.integrator.CoefficientSets.rkdp_87)
     benchmark_propagator_settings.integrator_settings = propagation_setup.integrator.runge_kutta_fixed_step_size(
         first_benchmark_step_size,
-        propagation_setup.integrator.CoefficientSets.rkdp_87)
+        propagation_setup.integrator.CoefficientSets.rkf_56)
     benchmark_propagator_settings.print_settings.print_dependent_variable_indices = True
 
     # Recreate the guidance object
@@ -518,7 +519,7 @@ def generate_benchmarks(benchmark_step_size,
     # Create integrator settings for the second benchmark in the same way
     benchmark_propagator_settings.integrator_settings = propagation_setup.integrator.runge_kutta_fixed_step_size(
         second_benchmark_step_size,
-        propagation_setup.integrator.CoefficientSets.rkdp_87)
+        propagation_setup.integrator.CoefficientSets.rkf_56)
     benchmark_propagator_settings.print_settings.print_dependent_variable_indices = False
 
     # Recreate the guidance object
@@ -2061,7 +2062,9 @@ class ApolloGuidance:
             self.pos_earthfixed = self.vehicle.flight_conditions.body_centered_body_fixed_state[0:3]
             self.pos_earthfixed_unit = self.pos_earthfixed / np.linalg.norm(self.pos_earthfixed)
 
-
+            self.aerodynamic_coefficient_interface = self.vehicle_flight_conditions.aerodynamic_coefficient_interface
+            self.current_force_coefficients = self.aerodynamic_coefficient_interface.current_force_coefficients
+            print(self.current_force_coefficients, self.current_force_coefficients[2]/self.current_force_coefficients[0])
 
 
             # extract guidance state
@@ -2073,7 +2076,7 @@ class ApolloGuidance:
             D_m = rho * (v ** 2) / (2 * self.beta)  # (D/m)
 
             # compute reference bank angle
-            phi = np.deg2rad(90.0)
+            phi = np.deg2rad(0.0)
 
             # Wait for sensed G foroce to exceed threshold before starting
             # closed loop guidance
@@ -2130,3 +2133,52 @@ class ApolloGuidance:
                 self.bank_angle = self.bank_sign * self.bank_angle_mag
 
                 self.current_time = current_time
+
+class validation_guidance:
+
+    def __init__(self, bodies: environment.SystemOfBodies):
+        self.angle_of_attack = np.deg2rad(23)
+        self.current_time = float("NaN")
+        self.bank_angle = 0.0
+
+    def getAerodynamicAngles(self, current_time: float):
+        self.updateGuidance(current_time)
+        return np.array([self.angle_of_attack, 0.0, self.bank_angle])
+
+    def updateGuidance(self, current_time: float):
+        if (math.isnan(current_time)):
+            self.current_time = float("NaN")
+        elif (current_time != self.current_time):
+
+
+            if current_time <= 83.03:
+                self.bank_angle = np.deg2rad(0.0)
+            else:
+                self.bank_angle = np.deg2rad(104.55)
+            '''
+            elif current_time >= 83.03 and current_time <= 95.03:
+                self.bank_angle = np.deg2rad(100.0)
+            elif current_time >= 95.03 and current_time <= 132.65:
+                self.bank_angle = np.deg2rad(180.0)
+            elif current_time >= 132.65 and current_time <= 162.49:
+                self.bank_angle = np.deg2rad(0.0)
+            elif current_time >= 162.49 and current_time <= 171.57:
+                self.bank_angle = np.deg2rad(30.18)
+            elif current_time >= 171.57 and current_time <= 211.14:
+                self.bank_angle = np.deg2rad(52.28)
+            elif current_time >= 211.14 and current_time <= 322.05:
+                self.bank_angle = np.deg2rad(73.83)
+            elif current_time >= 322.05 and current_time <= 331.14:
+                self.bank_angle = np.deg2rad(44.19)
+            elif current_time >= 331.14 and current_time <= 345.73:
+                self.bank_angle = np.deg2rad(80.30)
+            elif current_time >= 345.73 and current_time <= 373.62:
+                self.bank_angle = np.deg2rad(74.91)
+            elif current_time >= 373.62 and current_time <= 380.76:
+                self.bank_angle = np.deg2rad(59.82)
+            elif current_time >= 380.76 and current_time <= 413.19:
+                self.bank_angle = np.deg2rad(84.07)
+            '''
+
+
+            self.current_time = current_time
