@@ -1,11 +1,5 @@
 
 
 import numpy as np
+import EntryUtilities as Util
 
-a = True
-b = True
-
-if a and b:
-    print('yes')
-else:
-    print('no')

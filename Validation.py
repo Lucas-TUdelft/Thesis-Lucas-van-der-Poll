@@ -93,10 +93,11 @@ bodies = environment_setup.create_system_of_bodies(body_settings)
 bodies.create_empty_body('Capsule')
 new_capsule_mass = 4976 # kg
 bodies.get_body('Capsule').set_constant_mass(new_capsule_mass)
-reference_area = 39.441 # m^2
+reference_area = 12.02 # m^2
 lookup_tables_path = os.path.join(os.getcwd(),"AerodynamicLookupTables")
 aero_coefficients_files = {0: os.path.join(lookup_tables_path, "validation_CD_table.txt"),
                            2: os.path.join(lookup_tables_path, "validation_CL_table.txt")}
+
 aero_coefficient_settings = environment_setup.aerodynamic_coefficients.tabulated_force_only_from_files(
     force_coefficient_files=aero_coefficients_files,
     reference_area=reference_area,
@@ -142,7 +143,9 @@ dependent_variables_to_save = [propagation_setup.dependent_variable.mach_number(
                                propagation_setup.dependent_variable.relative_velocity('Capsule','Earth'),
                                propagation_setup.dependent_variable.geodetic_latitude('Capsule','Earth'),
                                propagation_setup.dependent_variable.longitude('Capsule','Earth'),
-                               propagation_setup.dependent_variable.bank_angle('Capsule','Earth')]
+                               propagation_setup.dependent_variable.bank_angle('Capsule','Earth'),
+                               propagation_setup.dependent_variable.relative_speed('Capsule','Earth')
+                               ]
 
 # body to propagate and central body
 bodies_to_propagate = ['Capsule']
@@ -167,7 +170,6 @@ acceleration_models = propagation_setup.create_acceleration_models(
 radial_distance = spice_interface.get_average_radius('Earth') + 123883.27776
 latitude = np.deg2rad(-23.652)
 longitude = np.deg2rad(174.928)
-#speed = 6.93E3
 speed = 11000
 flight_path_angle = np.deg2rad(-6.616)
 heading_angle = np.deg2rad(95.0)
@@ -211,8 +213,21 @@ state_history_array = result2array(state_history)
 dependent_variables_array = result2array(dependent_variables)
 
 h = dependent_variables_array[:, 2]
-bank = np.rad2deg(dependent_variables_array[:, 9])
+bank = np.rad2deg(dependent_variables_array[:, 18])
+vel = dependent_variables_array[:, 19]
+g = dependent_variables_array[:, 3]
 dependent_variables_time = dependent_variables.keys()
 
 altitude_plot(h, dependent_variables_time)
 bank_plot(bank, dependent_variables_time)
+velocity_plot(vel, dependent_variables_time)
+gload_plot(g, dependent_variables_time)
+
+'''
+Validation changes to main:
+- mass
+- reference area
+- CL/CD
+- initial state
+- guidance
+'''

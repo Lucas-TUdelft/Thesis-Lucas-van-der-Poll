@@ -13,8 +13,17 @@ round2=lambda x,y=None: round(x+1e-15,y)
 
 def reference_bank_angle(t, X, params):
     """Generates the reference bank angle profile"""
+    v_entry = params['v_entry']
+    bank_1 = params['bank_1']
+    bank_2 = params['bank_2']
+    bank_3 = params['bank_3']
     v = X[2]
-    return np.deg2rad(60.0)
+    if v >= (0.7 * v_entry):
+        return np.deg2rad(bank_1)
+    elif v >= (0.5 * v_entry):
+        return np.deg2rad(bank_2)
+    else:
+        return np.deg2rad(bank_3)
 
 
 def traj_eom(t: float,
@@ -128,12 +137,20 @@ def simulate_entry_trajectory(eom: Callable[[float, np.array], np.array],
     num_steps = len(output.t)
 
     u = np.zeros(num_steps)
+    g_load = np.zeros(num_steps)
     for i, (t, X) in enumerate(zip(output.t, output.y.T)):
+        h, s, v, gam = X
         u[i] = bank_angle_fn(t, X, params)
+
+        rho = params['rho0'] * np.exp(-h/params['H'])
+        D_m = rho * (v**2) / (2 * params['beta'])
+        L_m = D_m * params['LD']
+
+        g_load[i] = np.sqrt((D_m**2) + (L_m**2)) / params['g']
 
     # Transpose y so that each state is in a separate column and each row
     # represents a timestep
-    return Trajectory(output.t, output.y.T, u, params)
+    return Trajectory(output.t, output.y.T, u, params), g_load
 
 
 class ApolloReferenceData:
@@ -218,13 +235,20 @@ h0 = 79486.08873507846 # Entry altitude
 V0 = 7099.068400651032  # Entry velocity
 gamma0_deg = np.rad2deg(-0.04603989313249862) # Entry flight path angle
 s0 = 0
+bank1 = 0.0
+bank2 = 60.0
+bank3 = 0.0
 # Model params
 params = {'H': 7200,
-              'rho0': 1.225, # kg/m^3
-              'beta': 246.7,
-              'LD': 0.26,
-              'R_m': 6371e3,
-              'g': 9.81}
+          'rho0': 1.225, # kg/m^3
+          'beta': 246.7,
+          'LD': 0.26,
+          'R_m': 6371e3,
+          'g': 9.81,
+          'v_entry': V0,
+          'bank_1': bank1,
+          'bank_2': bank2,
+          'bank_3': bank3}
 
 # Terminal altitude
 h_f = 30000
@@ -235,7 +259,17 @@ t0 = 0
 tf = 480
 tspan = np.linspace(t0, tf, 1001)
 
-ref_traj = simulate_entry_trajectory(traj_eom, t0, tf, X0, 0, h_f, params, reference_bank_angle, tspan)
+ref_traj, g_load = simulate_entry_trajectory(traj_eom, t0, tf, X0, 0, h_f, params, reference_bank_angle, tspan)
+
+plt.plot(ref_traj.t, g_load)
+plt.grid(True)
+plt.show()
+
+plt.plot(ref_traj.X[:,2]/1e3, g_load)
+plt.grid(True)
+plt.show()
+
+
 
 plt.plot(ref_traj.X[:,2]/1e3, ref_traj.X[:,0]/1e3)
 plt.xlabel('V [km/s]')

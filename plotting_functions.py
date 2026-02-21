@@ -57,6 +57,60 @@ def altitude_plot(h,t):
 
     return
 
+def velocity_plot(v,t):
+    '''
+    plot the velocity over time for the capsule
+
+    Parmeters
+    ----------
+    v : list
+        velocity at each time step
+    t : list
+        time
+
+    Returns
+    ----------
+    none
+    '''
+
+    fig = plt.figure(figsize=(8, 8))
+    ax1 = fig.add_subplot(111)
+    ax1.plot(t,v)
+    ax1.set_xlabel('Time [s]')
+    ax1.set_ylabel('Velocity [m/s]')
+    ax1.grid()
+    fig.tight_layout()
+    plt.show()
+
+    return
+
+def gload_plot(g,t):
+    '''
+    plot the velocity over time for the capsule
+
+    Parmeters
+    ----------
+    g : list
+        aerodynamic g-load at each time step
+    t : list
+        time
+
+    Returns
+    ----------
+    none
+    '''
+
+    fig = plt.figure(figsize=(8, 8))
+    ax1 = fig.add_subplot(111)
+    ax1.plot(t,g)
+    ax1.set_xlabel('Time [s]')
+    ax1.set_ylabel('Velocity [m/s]')
+    ax1.grid()
+    fig.tight_layout()
+    plt.show()
+
+    return
+
 def latlong_plot(lat, long, lat_groundstation, long_groundstation):
     '''
     plot the latitude and longitude for the capsule, and for the ground station

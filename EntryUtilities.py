@@ -78,6 +78,8 @@ def get_capsule_coefficient_interface(capsule_shape: tudatpy.kernel.math.geometr
     # Calculate reference area
     #reference_area = np.pi * capsule_middle_radius ** 2
     reference_area = 60.82 # m^2
+    #reference_area = 39.441 # m^2
+    #reference_area = 12.0
 
     '''
     # Create aerodynamic database
@@ -113,6 +115,10 @@ def get_capsule_coefficient_interface(capsule_shape: tudatpy.kernel.math.geometr
     lookup_tables_path = os.path.join(os.getcwd(),"AerodynamicLookupTables")
     aero_coefficients_files = {0: os.path.join(lookup_tables_path,"CD_table.txt"),
                                2: os.path.join(lookup_tables_path,"CL_table.txt")}
+    '''
+    aero_coefficients_files = {0: os.path.join(lookup_tables_path, "validation_CD_table.txt"),
+                               2: os.path.join(lookup_tables_path, "validation_CL_table.txt")}
+    '''
     # Setup the aerodynamic coefficients settings tabulated from the files
     aero_coefficient_settings = environment_setup.aerodynamic_coefficients.tabulated_force_only_from_files(
         force_coefficient_files=aero_coefficients_files,
@@ -157,6 +163,7 @@ def set_capsule_shape_parameters(shape_parameters: list,
     #new_capsule_mass = capsule_density * new_capsule.volume
     # Set capsule mass
     new_capsule_mass = 19057.8 # kg
+    #new_capsule_mass = 4976  # kg
     bodies.get_body('Capsule').set_constant_mass(new_capsule_mass)
 
     # Create aerodynamic interface from shape parameters (this calls the local inclination analysis)
@@ -277,10 +284,17 @@ def get_initial_state(simulation_start_epoch: float,
     latitude = np.deg2rad(5.3)
     longitude = np.deg2rad(-50.0)
     #speed = 6.93E3
-    speed = 7200
+    speed = 7050
     flight_path_angle = np.deg2rad(-0.8)
+    heading_angle = np.deg2rad(68.5)
+    '''
+    radial_distance = spice_interface.get_average_radius('Earth') + 123883.27776
+    latitude = np.deg2rad(-23.652)
+    longitude = np.deg2rad(174.928)
+    speed = 11000
+    flight_path_angle = np.deg2rad(-6.616)
     heading_angle = np.deg2rad(95.0)
-
+    '''
     # Convert spherical elements to body-fixed cartesian coordinates
     initial_cartesian_state_body_fixed = element_conversion.spherical_to_cartesian_elementwise(
         radial_distance, latitude, longitude, speed, flight_path_angle, heading_angle)
@@ -448,7 +462,8 @@ def get_dependent_variable_save_settings() -> list:
                                    propagation_setup.dependent_variable.relative_velocity('Capsule','Earth'),
                                    propagation_setup.dependent_variable.geodetic_latitude('Capsule','Earth'),
                                    propagation_setup.dependent_variable.longitude('Capsule','Earth'),
-                                   propagation_setup.dependent_variable.bank_angle('Capsule','Earth')]
+                                   propagation_setup.dependent_variable.bank_angle('Capsule','Earth'),
+                                   propagation_setup.dependent_variable.relative_speed('Capsule','Earth')]
     return dependent_variables_to_save
 
 ###########################################################################
@@ -507,20 +522,24 @@ def generate_benchmarks(benchmark_step_size,
         propagation_setup.integrator.CoefficientSets.rkf_56)
     benchmark_propagator_settings.print_settings.print_dependent_variable_indices = True
 
+    '''
     # Recreate the guidance object
     aerodynamic_guidance_object = ApolloGuidance.from_file('apollo_data_vref.npz', bodies, K=1)
     bodies.get_body('Capsule').rotation_model.reset_aerodynamic_angle_function(
         aerodynamic_guidance_object.getAerodynamicAngles)
+    '''
 
     first_dynamics_simulator = numerical_simulation.create_dynamics_simulator(
         bodies,
         benchmark_propagator_settings )
 
+    '''
     # Create integrator settings for the second benchmark in the same way
     benchmark_propagator_settings.integrator_settings = propagation_setup.integrator.runge_kutta_fixed_step_size(
         second_benchmark_step_size,
         propagation_setup.integrator.CoefficientSets.rkf_56)
     benchmark_propagator_settings.print_settings.print_dependent_variable_indices = False
+    '''
 
     # Recreate the guidance object
     aerodynamic_guidance_object = ApolloGuidance.from_file('apollo_data_vref.npz', bodies, K=1)
@@ -2064,7 +2083,6 @@ class ApolloGuidance:
 
             self.aerodynamic_coefficient_interface = self.vehicle_flight_conditions.aerodynamic_coefficient_interface
             self.current_force_coefficients = self.aerodynamic_coefficient_interface.current_force_coefficients
-            print(self.current_force_coefficients, self.current_force_coefficients[2]/self.current_force_coefficients[0])
 
 
             # extract guidance state
@@ -2151,34 +2169,43 @@ class validation_guidance:
         elif (current_time != self.current_time):
 
 
-            if current_time <= 83.03:
-                self.bank_angle = np.deg2rad(0.0)
-            else:
-                self.bank_angle = np.deg2rad(104.55)
-            '''
-            elif current_time >= 83.03 and current_time <= 95.03:
-                self.bank_angle = np.deg2rad(100.0)
-            elif current_time >= 95.03 and current_time <= 132.65:
-                self.bank_angle = np.deg2rad(180.0)
-            elif current_time >= 132.65 and current_time <= 162.49:
-                self.bank_angle = np.deg2rad(0.0)
-            elif current_time >= 162.49 and current_time <= 171.57:
-                self.bank_angle = np.deg2rad(30.18)
-            elif current_time >= 171.57 and current_time <= 211.14:
-                self.bank_angle = np.deg2rad(52.28)
-            elif current_time >= 211.14 and current_time <= 322.05:
-                self.bank_angle = np.deg2rad(73.83)
-            elif current_time >= 322.05 and current_time <= 331.14:
-                self.bank_angle = np.deg2rad(44.19)
-            elif current_time >= 331.14 and current_time <= 345.73:
-                self.bank_angle = np.deg2rad(80.30)
-            elif current_time >= 345.73 and current_time <= 373.62:
-                self.bank_angle = np.deg2rad(74.91)
-            elif current_time >= 373.62 and current_time <= 380.76:
-                self.bank_angle = np.deg2rad(59.82)
-            elif current_time >= 380.76 and current_time <= 413.19:
-                self.bank_angle = np.deg2rad(84.07)
-            '''
 
+            if current_time <= 86.27:
+                phi = np.deg2rad(0.0)
+            elif current_time >= 86.27 and current_time <= 99.03:
+                phi = np.deg2rad(100.0)
+            elif current_time >= 99.03 and current_time <= 137.51:
+                phi = np.deg2rad(180.0)
+            elif current_time >= 137.51 and current_time <= 162.49:
+                phi = np.deg2rad(0.0)
+            elif current_time >= 162.49 and current_time <= 166.70:
+                phi = np.deg2rad(55.51)
+            elif current_time >= 166.70 and current_time <= 177.41:
+                #phi = np.deg2rad(35.03)
+                phi = np.deg2rad(55.51)
+            elif current_time >= 177.41 and current_time <= 194.59:
+                phi = np.deg2rad(55.51)
+            elif current_time >= 194.59 and current_time <= 217.62:
+                phi = np.deg2rad(59.82)
+            elif current_time >= 217.62 and current_time <= 243.57:
+                phi = np.deg2rad(-73.83)
+            elif current_time >= 243.57 and current_time <= 298.05:
+                phi = np.deg2rad(-80.02)
+            elif current_time >= 298.05 and current_time <= 322.05:
+                phi = np.deg2rad(-73.83)
+            elif current_time >= 322.05 and current_time <= 331.14:
+                phi = np.deg2rad(-44.19)
+            elif current_time >= 331.14 and current_time <= 345.73:
+                phi = np.deg2rad(80.30)
+            elif current_time >= 345.73 and current_time <= 373.62:
+                phi = np.deg2rad(74.91)
+            elif current_time >= 373.62 and current_time <= 380.76:
+                phi = np.deg2rad(-59.82)
+            elif current_time >= 380.76 and current_time <= 413.19:
+                phi = np.deg2rad(-84.07)
+            else:
+                phi = np.deg2rad(104.55)
+
+            self.bank_angle = phi
 
             self.current_time = current_time

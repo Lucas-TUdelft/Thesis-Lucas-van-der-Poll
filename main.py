@@ -140,6 +140,7 @@ environment_setup.add_flight_conditions(bodies, 'Capsule', 'Earth')
 
 #aerodynamic_guidance_object = Util.PREDGUID(bodies)
 aerodynamic_guidance_object = Util.ApolloGuidance.from_file('apollo_data_vref.npz', bodies, K=1)
+#aerodynamic_guidance_object = Util.validation_guidance(bodies)
 rotation_model_settings = environment_setup.rotation_model.aerodynamic_angle_based(
     'Earth', '', 'BodyFixed', aerodynamic_guidance_object.getAerodynamicAngles )
 environment_setup.add_rotation_model( bodies, 'Capsule', rotation_model_settings )
@@ -246,6 +247,7 @@ if use_benchmark:
         bank_angle = np.rad2deg(benchmark_dependent_variables_array[:, 18])
 
         bank_plot(bank_angle, dependent_variables_time)
+
 
 
 
