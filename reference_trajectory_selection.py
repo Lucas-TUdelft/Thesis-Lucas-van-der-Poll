@@ -138,6 +138,7 @@ def simulate_entry_trajectory(eom: Callable[[float, np.array], np.array],
 
     u = np.zeros(num_steps)
     g_load = np.zeros(num_steps)
+    heatflux = np.zeros(num_steps)
     for i, (t, X) in enumerate(zip(output.t, output.y.T)):
         h, s, v, gam = X
         u[i] = bank_angle_fn(t, X, params)
@@ -148,9 +149,11 @@ def simulate_entry_trajectory(eom: Callable[[float, np.array], np.array],
 
         g_load[i] = np.sqrt((D_m**2) + (L_m**2)) / params['g']
 
+        heatflux[i] = params['k'] * np.sqrt(rho / params['R_n']) * v**3
+
     # Transpose y so that each state is in a separate column and each row
     # represents a timestep
-    return Trajectory(output.t, output.y.T, u, params), g_load
+    return Trajectory(output.t, output.y.T, u, params), g_load, heatflux
 
 
 class ApolloReferenceData:
@@ -224,12 +227,195 @@ class ApolloReferenceData:
         params = npzdata.get('params').item()
         return ApolloReferenceData(X_and_lam, u, tspan, params)
 
+def generate_reference_trajectory(h0, V0, gamma0_deg, bank_initial, target_range, target_margin, max_loads):
+    '''
+    :param h0:
+    :param V0:
+    :param gamma0_deg:
+    :param bank_initial:
+    :param target_range:
+    :param target_margin:
+    :param max_loads:
+    :return:
+    '''
+
+    params = {'H': 7200,
+              'rho0': 1.225,  # kg/m^3
+              'beta': 246.7,
+              'LD': 0.26,
+              'R_m': 6371e3,
+              'g': 9.81,
+              'v_entry': V0,
+              'bank_1': bank_initial[0],
+              'bank_2': bank_initial[1],
+              'bank_3': bank_initial[2],
+              'R_n': 1.861,
+              'k': 1.83 * 10 ** (-4)}
+
+    s0 = 0
+
+    h_f = 30000
+
+    gamma0 = np.deg2rad(gamma0_deg)
+    X0 = np.array([h0, s0, V0, gamma0])
+    t0 = 0
+    tf = 480
+    tspan = np.linspace(t0, tf, 1001)
+
+    ref_traj, g_load, heatflux = simulate_entry_trajectory(traj_eom, t0, tf, X0, 0, h_f, params, reference_bank_angle,
+                                                           tspan)
+
+    max_g_section_1 = 0.0
+    max_g_section_2 = 0.0
+    max_g_section_3 = 0.0
+
+    max_heatflux_section_1 = 0.0
+    max_heatflux_section_2 = 0.0
+    max_heatflux_section_3 = 0.0
+
+    for i in range(len(ref_traj.X[:, 2])):
+        if ref_traj.X[i, 2] >= (0.5 * params['v_entry']) and not ref_traj.X[i, 2] >= (0.7 * params['v_entry']):
+            if g_load[i] >= max_g_section_2:
+                max_g_section_2 = g_load[i]
+                max_heatflux_section_2 = heatflux[i]
+        elif ref_traj.X[i, 2] <= (0.5 * params['v_entry']):
+            if g_load[i] >= max_g_section_3:
+                max_g_section_3 = g_load[i]
+                max_heatflux_section_3 = heatflux[i]
+        else:
+            if g_load[i] >= max_g_section_1:
+                max_g_section_1 = g_load[i]
+                max_heatflux_section_1 = heatflux[i]
+
+    max_gload_array = np.array([max_g_section_1, max_g_section_2, max_g_section_3]) / max_loads[0]
+    max_heatflux_array = np.array([max_heatflux_section_1, max_heatflux_section_2, max_heatflux_section_3]) / max_loads[1]
+
+    closest_to_margin = [max(max_gload_array[0],max_heatflux_array[0]),
+                         max(max_gload_array[1],max_heatflux_array[1]),
+                         max(max_gload_array[2],max_heatflux_array[2])]
+
+    print(closest_to_margin)
+
+    reference_range = ref_traj.X[-1][1]
+    downrange_difference = reference_range - target_range
+
+    if abs(downrange_difference) <= target_margin:
+        print('accepted bank angle profile')
+        return ref_traj, g_load, heatflux, params
+    else:
+        searching = True
+        iterations = 0
+
+        while searching:
+            iterations = iterations + 1
+
+            if downrange_difference >= 0:
+                # overshoot, reduce bank angle in a section
+
+                # try section 1, use if less than 80% margin and bank angle 1 is not yet full lift down
+                if closest_to_margin[0] <= 0.8 and params['bank_1'] <= 175.0:
+                    params['bank_1'] = params['bank_1'] + 1.0
+                    print('try section 1, reduce overshoot, 80% margin')
+                # try section 2, use if less than 80% margin and bank angle 2 is not yet full lift down
+                elif closest_to_margin[1] <= 0.8 and params['bank_2'] <= 175.0:
+                    params['bank_2'] = params['bank_2'] + 1.0
+                    print('try section 2, reduce overshoot, 80% margin')
+                # try section 3, use if less than 80% margin and bank angle 3 is not yet full lift down
+                elif closest_to_margin[2] <= 0.8 and params['bank_3'] <= 175.0:
+                    params['bank_3'] = params['bank_3'] + 1.0
+                    print('try section 3, reduce overshoot, 80% margin')
+                # try section 1, use if less than margin and bank angle 1 is not yet full lift down
+                elif closest_to_margin[0] <= 1.0 and params['bank_1'] <= 175.0:
+                    params['bank_1'] = params['bank_1'] + 1.0
+                    print('try section 1, reduce overshoot, 100% margin')
+                # try section 2, use if less than 80% margin and bank angle 2 is not yet full lift down
+                elif closest_to_margin[1] <= 1.0 and params['bank_2'] <= 175.0:
+                    params['bank_2'] = params['bank_2'] + 1.0
+                    print('try section 2, reduce overshoot, 100% margin')
+                # try section 3, use if less than 80% margin and bank angle 3 is not yet full lift down
+                elif closest_to_margin[2] <= 1.0 and params['bank_3'] <= 175.0:
+                    params['bank_3'] = params['bank_3'] + 1.0
+                    print('try section 3, reduce overshoot, 100% margin')
+                else:
+                    print('target too close, not feasible under current conditions')
+                    searching = False
+
+
+            if downrange_difference <= 0:
+                # undershoot, increase bank angle in a section
+
+                # try section 1, use if bank angle 1 is not yet full lift up
+                if params['bank_1'] >= 5.0:
+                    params['bank_1'] = params['bank_1'] - 1.0
+                    print('try section 1, reduce undershoot')
+                # try section 2, use if bank angle 2 is not yet full lift up
+                elif params['bank_2'] >= 5.0:
+                    params['bank_2'] = params['bank_2'] - 1.0
+                    print('try section 1, reduce undershoot')
+                # try section 3, use if bank angle 3 is not yet full lift up
+                elif params['bank_3'] >= 5.0:
+                    params['bank_3'] = params['bank_3'] - 1.0
+                    print('try section 1, reduce undershoot')
+
+            # generate new reference trajectory
+            ref_traj, g_load, heatflux = simulate_entry_trajectory(traj_eom, t0, tf, X0, 0, h_f, params,
+                                                                   reference_bank_angle,
+                                                                   tspan)
+
+            max_g_section_1 = 0.0
+            max_g_section_2 = 0.0
+            max_g_section_3 = 0.0
+
+            max_heatflux_section_1 = 0.0
+            max_heatflux_section_2 = 0.0
+            max_heatflux_section_3 = 0.0
+
+            for i in range(len(ref_traj.X[:, 2])):
+                if ref_traj.X[i, 2] >= (0.5 * params['v_entry']) and not ref_traj.X[i, 2] >= (0.7 * params['v_entry']):
+                    if g_load[i] >= max_g_section_2:
+                        max_g_section_2 = g_load[i]
+                        max_heatflux_section_2 = heatflux[i]
+                elif ref_traj.X[i, 2] <= (0.5 * params['v_entry']):
+                    if g_load[i] >= max_g_section_3:
+                        max_g_section_3 = g_load[i]
+                        max_heatflux_section_3 = heatflux[i]
+                else:
+                    if g_load[i] >= max_g_section_1:
+                        max_g_section_1 = g_load[i]
+                        max_heatflux_section_1 = heatflux[i]
+
+            max_gload_array = np.array([max_g_section_1, max_g_section_2, max_g_section_3]) / max_loads[0]
+            max_heatflux_array = np.array([max_heatflux_section_1, max_heatflux_section_2, max_heatflux_section_3]) / \
+                                 max_loads[1]
+
+            closest_to_margin = [max(max_gload_array[0], max_heatflux_array[0]),
+                                 max(max_gload_array[1], max_heatflux_array[1]),
+                                 max(max_gload_array[2], max_heatflux_array[2])]
+
+            print('closest_to_margin:', closest_to_margin)
+            reference_range = ref_traj.X[-1][1]
+            downrange_difference = reference_range - target_range
+            print('downrange_difference', downrange_difference)
+
+            if abs(downrange_difference) <= target_margin:
+                print('accepted bank angle profile in', iterations, 'iterations')
+                searching = False
+                return ref_traj, g_load, heatflux, params
+
+            if iterations >= 100:
+                print('no accepted bank angle profile, returning best fit')
+                searching = False
+
+
+    return ref_traj, g_load, heatflux, params
+
 # Initial conditions
 '''
 h0 = 79.4E3 # Entry altitude
 V0 = 7003  # Entry velocity
 gamma0_deg = -3.21 # Entry flight path angle
 s0 = 0
+'''
 '''
 h0 = 79486.08873507846 # Entry altitude
 V0 = 7099.068400651032  # Entry velocity
@@ -248,7 +434,9 @@ params = {'H': 7200,
           'v_entry': V0,
           'bank_1': bank1,
           'bank_2': bank2,
-          'bank_3': bank3}
+          'bank_3': bank3,
+          'R_n': 1.861,
+          'k': 1.83 * 10**(-4)}
 
 # Terminal altitude
 h_f = 30000
@@ -259,16 +447,66 @@ t0 = 0
 tf = 480
 tspan = np.linspace(t0, tf, 1001)
 
-ref_traj, g_load = simulate_entry_trajectory(traj_eom, t0, tf, X0, 0, h_f, params, reference_bank_angle, tspan)
+ref_traj, g_load, heatflux = simulate_entry_trajectory(traj_eom, t0, tf, X0, 0, h_f, params, reference_bank_angle, tspan)
+'''
+#heatload = np.trapz(heatflux, ref_traj.t)
+h0 = 79486.08873507846 # Entry altitude
+V0 = 7099.068400651032  # Entry velocity
+gamma0_deg = np.rad2deg(-0.04603989313249862)
+bank_initial = [5.0, 5.0, 5.0]
+target_margin = 5000
+max_g = 10
+max_heatflux = 1.0 * 10**6
+max_loads = max_g, max_heatflux
+#ref_traj, g_load, heatflux, params = generate_reference_trajectory(h0, V0, gamma0_deg, bank_initial, 1.08646330e+06)
+ref_traj, g_load, heatflux, params = generate_reference_trajectory(
+    h0, V0, gamma0_deg, bank_initial, 1.00646330e+06, target_margin, max_loads)
 
 plt.plot(ref_traj.t, g_load)
+plt.xlabel('t [s]')
+plt.ylabel('g-load [-]')
 plt.grid(True)
 plt.show()
 
-plt.plot(ref_traj.X[:,2]/1e3, g_load)
+plt.plot(ref_traj.X[:,2], g_load)
+plt.xlabel('V [m/s]')
+plt.ylabel('g-load [-]')
 plt.grid(True)
 plt.show()
 
+plt.plot(ref_traj.t, heatflux)
+plt.xlabel('t [s]')
+plt.ylabel('q_dot [W/m^2]')
+plt.grid(True)
+plt.show()
+
+plt.plot(ref_traj.X[:,2], heatflux)
+plt.xlabel('V [m/s]')
+plt.ylabel('q_dot [W/m^2]')
+plt.grid(True)
+plt.show()
+
+max_g_section_1 = 0.0
+max_g_section_2 = 0.0
+max_g_section_3 = 0.0
+
+max_heatflux_section_1 = 0.0
+max_heatflux_section_2 = 0.0
+max_heatflux_section_3 = 0.0
+
+for i in range(len(ref_traj.X[:,2])):
+    if ref_traj.X[i,2] >= (0.5 * params['v_entry']) and not ref_traj.X[i,2] >= (0.7 * params['v_entry']):
+        if g_load[i] >= max_g_section_2:
+            max_g_section_2 = g_load[i]
+            max_heatflux_section_2 = heatflux[i]
+    elif ref_traj.X[i,2] <= (0.5 * params['v_entry']):
+        if g_load[i] >= max_g_section_3:
+            max_g_section_3 = g_load[i]
+            max_heatflux_section_3 = heatflux[i]
+    else:
+        if g_load[i] >= max_g_section_1:
+            max_g_section_1 = g_load[i]
+            max_heatflux_section_1 = heatflux[i]
 
 
 plt.plot(ref_traj.X[:,2]/1e3, ref_traj.X[:,0]/1e3)
