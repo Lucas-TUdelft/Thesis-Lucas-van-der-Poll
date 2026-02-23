@@ -260,7 +260,7 @@ def generate_reference_trajectory(h0, V0, gamma0_deg, bank_initial, target_range
     X0 = np.array([h0, s0, V0, gamma0])
     t0 = 0
     tf = 480
-    tspan = np.linspace(t0, tf, 1001)
+    tspan = np.linspace(t0, tf, 10001)
 
     ref_traj, g_load, heatflux = simulate_entry_trajectory(traj_eom, t0, tf, X0, 0, h_f, params, reference_bank_angle,
                                                            tspan)
@@ -306,31 +306,55 @@ def generate_reference_trajectory(h0, V0, gamma0_deg, bank_initial, target_range
         searching = True
         iterations = 0
 
+        # set section bounding flags
+        overshoot_1 = False
+        undershoot_1 = False
+        overshoot_2 = False
+        undershoot_2 = False
+        both_1 = False
+        both_2 = False
+
         while searching:
             iterations = iterations + 1
+
+            # check if section 1 has been tried with both overshoot and undershoot
+            if overshoot_1 and undershoot_1:
+                both_1 = True
+
+            # check if section 2 has been tried with both overshoot and undershoot
+            if overshoot_2 and undershoot_2:
+                both_2 = True
 
             if downrange_difference >= 0:
                 # overshoot, reduce bank angle in a section
 
-                # try section 1, use if less than 80% margin and bank angle 1 is not yet full lift down
-                if closest_to_margin[0] <= 0.8 and params['bank_1'] <= 175.0:
+                # try section 1, use if less than 80% margin, bank angle 1 is not yet full lift down and bank angle
+                # variation in section 1 has not yet overshot and undershot the target
+                if closest_to_margin[0] <= 0.8 and params['bank_1'] <= 175.0 and not both_1:
                     params['bank_1'] = params['bank_1'] + 1.0
+                    overshoot_1 = True
                     print('try section 1, reduce overshoot, 80% margin')
-                # try section 2, use if less than 80% margin and bank angle 2 is not yet full lift down
-                elif closest_to_margin[1] <= 0.8 and params['bank_2'] <= 175.0:
+                # try section 2, use if less than 80% margin, bank angle 2 is not yet full lift down and bank angle
+                # variation in section 2 has not yet overshot and undershot the target
+                elif closest_to_margin[1] <= 0.8 and params['bank_2'] <= 175.0 and not both_2:
                     params['bank_2'] = params['bank_2'] + 1.0
+                    overshoot_2 = True
                     print('try section 2, reduce overshoot, 80% margin')
                 # try section 3, use if less than 80% margin and bank angle 3 is not yet full lift down
                 elif closest_to_margin[2] <= 0.8 and params['bank_3'] <= 175.0:
                     params['bank_3'] = params['bank_3'] + 1.0
                     print('try section 3, reduce overshoot, 80% margin')
-                # try section 1, use if less than margin and bank angle 1 is not yet full lift down
-                elif closest_to_margin[0] <= 1.0 and params['bank_1'] <= 175.0:
+                # try section 1, use if less than margin and bank angle 1 is not yet full lift down and bank angle
+                # variation in section 1 has not yet overshot and undershot the target
+                elif closest_to_margin[0] <= 1.0 and params['bank_1'] <= 175.0 and not both_1:
                     params['bank_1'] = params['bank_1'] + 1.0
+                    overshoot_1 = True
                     print('try section 1, reduce overshoot, 100% margin')
-                # try section 2, use if less than 80% margin and bank angle 2 is not yet full lift down
-                elif closest_to_margin[1] <= 1.0 and params['bank_2'] <= 175.0:
+                # try section 2, use if less than 80% margin and bank angle 2 is not yet full lift down and bank angle
+                # variation in section 2 has not yet overshot and undershot the target
+                elif closest_to_margin[1] <= 1.0 and params['bank_2'] <= 175.0 and not both_2:
                     params['bank_2'] = params['bank_2'] + 1.0
+                    overshoot_2 = True
                     print('try section 2, reduce overshoot, 100% margin')
                 # try section 3, use if less than 80% margin and bank angle 3 is not yet full lift down
                 elif closest_to_margin[2] <= 1.0 and params['bank_3'] <= 175.0:
@@ -344,13 +368,17 @@ def generate_reference_trajectory(h0, V0, gamma0_deg, bank_initial, target_range
             if downrange_difference <= 0:
                 # undershoot, increase bank angle in a section
 
-                # try section 1, use if bank angle 1 is not yet full lift up
-                if params['bank_1'] >= 5.0:
+                # try section 1, use if bank angle 1 is not yet full lift up and bank angle
+                # variation in section 1 has not yet overshot and undershot the target
+                if params['bank_1'] >= 5.0 and not both_1:
                     params['bank_1'] = params['bank_1'] - 1.0
+                    undershoot_1 = True
                     print('try section 1, reduce undershoot')
-                # try section 2, use if bank angle 2 is not yet full lift up
-                elif params['bank_2'] >= 5.0:
+                # try section 2, use if bank angle 2 is not yet full lift up and bank angle
+                # variation in section 2 has not yet overshot and undershot the target
+                elif params['bank_2'] >= 5.0 and not both_2:
                     params['bank_2'] = params['bank_2'] - 1.0
+                    undershoot_2 = True
                     print('try section 1, reduce undershoot')
                 # try section 3, use if bank angle 3 is not yet full lift up
                 elif params['bank_3'] >= 5.0:
@@ -460,7 +488,7 @@ max_heatflux = 1.0 * 10**6
 max_loads = max_g, max_heatflux
 #ref_traj, g_load, heatflux, params = generate_reference_trajectory(h0, V0, gamma0_deg, bank_initial, 1.08646330e+06)
 ref_traj, g_load, heatflux, params = generate_reference_trajectory(
-    h0, V0, gamma0_deg, bank_initial, 1.00646330e+06, target_margin, max_loads)
+    h0, V0, gamma0_deg, bank_initial, 1.08646330e+06, target_margin, max_loads)
 
 plt.plot(ref_traj.t, g_load)
 plt.xlabel('t [s]')

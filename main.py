@@ -10,6 +10,7 @@ import apollo_utils
 from plotting_functions import *
 
 # Tudatpy imports
+import tudatpy
 from tudatpy.data import save2txt
 from tudatpy.kernel import constants
 from tudatpy.kernel.interface import spice_interface
@@ -31,28 +32,10 @@ import EntryUtilities as Util
 # Load spice kernels
 spice_interface.load_standard_kernels()
 
-# Choose whether benchmark is run
-use_benchmark = True
-run_integrator_analysis = False
-
 # Choose whether output of the propagation is written to files
 write_results_to_file = True
 # Get path of current directory
 current_dir = os.path.dirname(__file__)
-
-###########################################################################
-# DEFINE SIMULATION SETTINGS ##############################################
-###########################################################################
-
-# Using shape parameters for now
-shape_parameters = [3.8686343422,
-                    2.6697460404,
-                    0.6877576649,
-                    -0.7652400717,
-                    0.3522259173,
-                    0.2548030601]
-
-capsule_density = 250.0  # kg m-3
 
 # Set simulation start epoch
 simulation_start_epoch = 0.0  # s
@@ -60,13 +43,10 @@ simulation_start_epoch = 0.0  # s
 maximum_duration = constants.JULIAN_DAY  # s
 termination_altitude = 30.0E3  # m
 
-###########################################################################
-# CREATE ENVIRONMENT ######################################################
-###########################################################################
-
 # Define settings for celestial bodies
 bodies_to_create = ['Earth', 'Moon', 'Sun']
-# Define Ground station settings (Paris)
+
+# Define Ground station settings
 target_location = 'Cabo Verde'
 if target_location == 'Paris':
     station_altitude = 35.0 # m
@@ -80,6 +60,7 @@ elif target_location == 'Natal':
     station_altitude = 30.0  # m
     station_latitude = -5.7842  # deg
     station_longitude = -35.2000  # deg
+
 # Define coordinate system
 global_frame_origin = 'Earth'
 global_frame_orientation = 'J2000'
@@ -89,6 +70,7 @@ body_settings = environment_setup.get_default_body_settings(
     bodies_to_create,
     global_frame_origin,
     global_frame_orientation)
+
 
 # Earth shape
 equitorial_radius = 6378137.0
@@ -115,148 +97,155 @@ body_settings.get('Sun').ephemeris_settings = environment_setup.ephemeris.kepler
     'Sun', simulation_start_epoch, spice_interface.get_body_gravitational_parameter('Sun'),
     frame_orientation='J2000')
 
+# rotation model
 body_settings.get('Earth').rotation_model_settings = environment_setup.rotation_model.gcrs_to_itrs(
         base_frame='J2000')
 body_settings.get('Earth').gravity_field_settings.associated_reference_frame = 'ITRS'
 
-#Util.add_capsule_settings_to_body_system(body_settings,shape_parameters,capsule_density)
-# Create bodies
+# create bodies
 bodies = environment_setup.create_system_of_bodies(body_settings)
-# Create Ground Station
+
+# create ground station
 ground_station_settings = environment_setup.ground_station.basic_station(
     "LandingPad",
     [station_altitude, station_latitude, station_longitude],
     element_conversion.geodetic_position_type)
 environment_setup.add_ground_station(bodies.get_body("Earth"), ground_station_settings)
 
-# Create and add capsule to body system
+# capsule
+bodies.create_empty_body('Capsule')
+new_capsule_mass = 19057.8 # kg
+bodies.get_body('Capsule').set_constant_mass(new_capsule_mass)
+reference_area = 60.82 # m^2
+lookup_tables_path = os.path.join(os.getcwd(),"AerodynamicLookupTables")
+aero_coefficients_files = {0: os.path.join(lookup_tables_path,"CD_table.txt"),
+                           2: os.path.join(lookup_tables_path,"CL_table.txt")}
 
-Util.add_capsule_to_body_system(bodies,
-                                shape_parameters,
-                                capsule_density)
+aero_coefficient_settings = environment_setup.aerodynamic_coefficients.tabulated_force_only_from_files(
+    force_coefficient_files=aero_coefficients_files,
+    reference_area=reference_area,
+    independent_variable_names=[environment.altitude_dependent, environment.mach_number_dependent]
+)
 
-# Create rotation model based on aerodynamic guidance
+environment_setup.add_aerodynamic_coefficient_interface(bodies, 'Capsule', aero_coefficient_settings)
+
+# flight conditions
 environment_setup.add_flight_conditions(bodies, 'Capsule', 'Earth')
 
-#aerodynamic_guidance_object = Util.PREDGUID(bodies)
+# validation bank angle profile
 aerodynamic_guidance_object = Util.ApolloGuidance.from_file('apollo_data_vref.npz', bodies, K=1)
-#aerodynamic_guidance_object = Util.validation_guidance(bodies)
 rotation_model_settings = environment_setup.rotation_model.aerodynamic_angle_based(
     'Earth', '', 'BodyFixed', aerodynamic_guidance_object.getAerodynamicAngles )
 environment_setup.add_rotation_model( bodies, 'Capsule', rotation_model_settings )
-#print("[TEST] Manual guidance eval at t=0: ", aerodynamic_guidance_object.getAerodynamicAngles(0.0))
 
-'''
-STS_guidance_object = Util.STSAerodynamicGuidance(bodies)
-rotation_model_settings = environment_setup.rotation_model.aerodynamic_angle_based(
-    'Earth', '', 'BodyFixed', STS_guidance_object.getAerodynamicAngles )
-environment_setup.add_rotation_model( bodies, 'Capsule', rotation_model_settings )
-'''
-#angles = aerodynamic_guidance_object.getAerodynamicAngles(0.0)
-#print("[TEST] Manual aerodynamic angles at t=0:", angles)
+# termination settings
+# Time
+time_termination_settings = propagation_setup.propagator.time_termination(
+    simulation_start_epoch + maximum_duration,
+    terminate_exactly_on_final_condition=False
+)
+# Altitude
+lower_altitude_termination_settings = propagation_setup.propagator.dependent_variable_termination(
+    dependent_variable_settings=propagation_setup.dependent_variable.altitude('Capsule', 'Earth'),
+    limit_value=termination_altitude,
+    use_as_lower_limit=True,
+    terminate_exactly_on_final_condition=False
+)
+# Define list of termination settings
+termination_settings_list = [time_termination_settings,
+                             lower_altitude_termination_settings]
+# Create termination settings object (when either the time of altitude condition is reached: propaation terminates)
+hybrid_termination_settings = propagation_setup.propagator.hybrid_termination(termination_settings_list,
+                                                                                  fulfill_single_condition=True)
+# dependent variables
+dependent_variables_to_save = [propagation_setup.dependent_variable.mach_number('Capsule', 'Earth'),
+                               propagation_setup.dependent_variable.altitude('Capsule', 'Earth'),
+                               propagation_setup.dependent_variable.local_aerodynamic_g_load('Capsule', 'Earth'),
+                               propagation_setup.dependent_variable.keplerian_state('Capsule', 'Earth'),
+                               propagation_setup.dependent_variable.relative_position('Capsule','Earth'),
+                               propagation_setup.dependent_variable.relative_velocity('Capsule','Earth'),
+                               propagation_setup.dependent_variable.geodetic_latitude('Capsule','Earth'),
+                               propagation_setup.dependent_variable.longitude('Capsule','Earth'),
+                               propagation_setup.dependent_variable.bank_angle('Capsule','Earth'),
+                               propagation_setup.dependent_variable.relative_speed('Capsule','Earth')
+                               ]
 
-###########################################################################
-# CREATE PROPAGATION SETTINGS #############################################
-###########################################################################
+# body to propagate and central body
+bodies_to_propagate = ['Capsule']
+central_bodies = ['Earth']
 
-# Retrieve termination settings
-termination_settings = Util.get_termination_settings(simulation_start_epoch,
-                                                     maximum_duration,
-                                                     termination_altitude)
+# Define accelerations acting on capsule
+acceleration_settings_on_vehicle = {
+    'Earth': [propagation_setup.acceleration.spherical_harmonic_gravity(6, 6),
+              propagation_setup.acceleration.aerodynamic()],
+    'Moon': [propagation_setup.acceleration.point_mass_gravity()],
+    'Sun': [propagation_setup.acceleration.point_mass_gravity()]
+}
+# Create acceleration models.
+acceleration_settings = {'Capsule': acceleration_settings_on_vehicle}
+acceleration_models = propagation_setup.create_acceleration_models(
+    bodies,
+    acceleration_settings,
+    bodies_to_propagate,
+    central_bodies)
 
-# Retrieve dependent variables to save
-dependent_variables_to_save = Util.get_dependent_variable_save_settings()
-# Check whether there is any
-are_dependent_variables_to_save = False if not dependent_variables_to_save else True
+# initial state
+radial_distance = spice_interface.get_average_radius('Earth') + 157.7E3
+latitude = np.deg2rad(5.3)
+longitude = np.deg2rad(-50.0)
+speed = 7050
+flight_path_angle = np.deg2rad(-0.8)
+heading_angle = np.deg2rad(68.5)
 
-###########################################################################
-# GENERATE BENCHMARK ######################################################
-###########################################################################
+# Convert spherical elements to body-fixed cartesian coordinates
+initial_cartesian_state_body_fixed = element_conversion.spherical_to_cartesian_elementwise(
+    radial_distance, latitude, longitude, speed, flight_path_angle, heading_angle)
+# Get rotational ephemerides of the Earth
+earth_rotational_model = bodies.get_body('Earth').rotation_model
+# Transform the state to the global (inertial) frame
+initial_cartesian_state_inertial = environment.transform_to_inertial_orientation(
+    initial_cartesian_state_body_fixed,
+    simulation_start_epoch,
+    earth_rotational_model)
 
-#benchmark_time_steps = [0.05,0.1,0.25,0.5,1,2,4,8,16]
-benchmark_time_steps = [2]
-maximum_errors = []
-errors = []
-times = []
-
-if use_benchmark:
-    # Define benchmark interpolator settings to make a comparison between the two benchmarks
-    benchmark_interpolator_settings = interpolators.lagrange_interpolation(
-        8,boundary_interpolation = interpolators.extrapolate_at_boundary)
-
-    # Create propagator settings for benchmark (Cowell)
-    benchmark_propagator_settings = Util.get_propagator_settings(shape_parameters,
-                                                                 bodies,
+# propagator and integrator
+propagator_settings = propagation_setup.propagator.translational(central_bodies,
+                                                                 acceleration_models,
+                                                                 bodies_to_propagate,
+                                                                 initial_cartesian_state_inertial,
                                                                  simulation_start_epoch,
-                                                                 termination_settings,
-                                                                 dependent_variables_to_save )
-    # Set output path for the benchmarks
-    benchmark_output_path = current_dir + '/SimulationOutput/benchmarks/' if write_results_to_file else None
+                                                                 None,
+                                                                 hybrid_termination_settings,
+                                                                 propagation_setup.propagator.cowell,
+                                                                 output_variables=dependent_variables_to_save)
 
-    for i in benchmark_time_steps:
-        # Generate benchmarks
-        benchmark_time_step = i
-        benchmark_list = Util.generate_benchmarks(benchmark_time_step,
-                                                  simulation_start_epoch,
-                                                  bodies,
-                                                  benchmark_propagator_settings,
-                                                  are_dependent_variables_to_save,
-                                                  benchmark_output_path)
+step_size = 1.0
+propagator_settings.integrator_settings = propagation_setup.integrator.runge_kutta_fixed_step_size(
+    step_size,
+    propagation_setup.integrator.CoefficientSets.rkf_56)
 
-        # Extract benchmark states
-        first_benchmark_state_history = benchmark_list[0]
-        second_benchmark_state_history = benchmark_list[1]
+# simulation
+dynamics_simulator = numerical_simulation.create_dynamics_simulator(
+    bodies,
+    propagator_settings)
 
-        # Create state interpolator for first benchmark
-        benchmark_state_interpolator = interpolators.create_one_dimensional_vector_interpolator(
-            first_benchmark_state_history,
-            benchmark_interpolator_settings)
+state_history = dynamics_simulator.state_history
+dependent_variables = dynamics_simulator.dependent_variable_history
 
-        # Compare benchmark states, returning interpolator of the first benchmark, and writing difference to file if
-        # write_results_to_file is set to True
-        benchmark_state_difference = Util.compare_benchmarks(first_benchmark_state_history,
-                                                             second_benchmark_state_history,
-                                                             benchmark_output_path,
-                                                             'benchmarks_state_difference.dat')
-        benchmark_state_difference_array = result2array(benchmark_state_difference)
-        e_r = benchmark_state_difference_array[:, 1:4]
-        time = benchmark_state_difference.keys()
+state_history_array = result2array(state_history)
+dependent_variables_array = result2array(dependent_variables)
 
-        e_r_mag = []
-        for j in range(len(e_r)):
-            error_magnitude = np.sqrt((e_r[j][0] ** 2) + (e_r[j][1] ** 2) + (e_r[j][2] ** 2))
-            e_r_mag.append(error_magnitude)
+h = dependent_variables_array[:, 2]
+latitude = np.rad2deg(dependent_variables_array[:, 16])
+longitude = np.rad2deg(dependent_variables_array[:, 17])
+bank = np.rad2deg(dependent_variables_array[:, 18])
+vel = dependent_variables_array[:, 19]
+g = dependent_variables_array[:, 3]
+dependent_variables_time = dependent_variables.keys()
 
-        e_max = max(e_r_mag)
-        maximum_errors.append(e_max)
-
-        # extract altitude
-        benchmark_dependent_variables_array = result2array(benchmark_list[2])
-        h = benchmark_dependent_variables_array[:, 2]
-        dependent_variables_time = benchmark_list[2].keys()
-
-        altitude_plot(h,dependent_variables_time)
-
-        # extract lat-long plot
-        latitude = np.rad2deg(benchmark_dependent_variables_array[:, 16])
-        longitude = np.rad2deg(benchmark_dependent_variables_array[:, 17])
-
-        latlong_plot(latitude,longitude,station_latitude,station_longitude)
-
-        # extract bank angle
-        bank_angle = np.rad2deg(benchmark_dependent_variables_array[:, 18])
-
-        bank_plot(bank_angle, dependent_variables_time)
-
-
-
-
-#maximum_error_plot(benchmark_time_steps,maximum_errors)
-#g = environment.SystemOfBodies.get_body('Capsule').mass
-ground_station = bodies.get_body("Earth").get_ground_station("LandingPad")
-ground_station_state = ground_station.station_state.get_cartesian_position(benchmark_dependent_variables_array[:, 0][-1])
-
-#print(bodies.get_body("Capsule").flight_conditions.body_centered_body_fixed_state)
-
-print(ground_station_state)
+altitude_plot(h, dependent_variables_time)
+bank_plot(bank, dependent_variables_time)
+velocity_plot(vel, dependent_variables_time)
+gload_plot(g, dependent_variables_time)
+latlong_plot(latitude,longitude,station_latitude,station_longitude)
 
