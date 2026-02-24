@@ -227,11 +227,12 @@ class ApolloReferenceData:
         params = npzdata.get('params').item()
         return ApolloReferenceData(X_and_lam, u, tspan, params)
 
-def generate_reference_trajectory(h0, V0, gamma0_deg, bank_initial, target_range, target_margin, max_loads):
+def generate_reference_trajectory(h0, V0, gamma0_deg, t_entry, bank_initial, target_range, target_margin, max_loads):
     '''
     :param h0:
     :param V0:
     :param gamma0_deg:
+    :param t0:
     :param bank_initial:
     :param target_range:
     :param target_margin:
@@ -259,7 +260,7 @@ def generate_reference_trajectory(h0, V0, gamma0_deg, bank_initial, target_range
     gamma0 = np.deg2rad(gamma0_deg)
     X0 = np.array([h0, s0, V0, gamma0])
     t0 = 0
-    tf = 480
+    tf = 700 - t_entry
     tspan = np.linspace(t0, tf, 10001)
 
     ref_traj, g_load, heatflux = simulate_entry_trajectory(traj_eom, t0, tf, X0, 0, h_f, params, reference_bank_angle,
@@ -297,6 +298,7 @@ def generate_reference_trajectory(h0, V0, gamma0_deg, bank_initial, target_range
     print(closest_to_margin)
 
     reference_range = ref_traj.X[-1][1]
+    print(reference_range, target_range)
     downrange_difference = reference_range - target_range
 
     if abs(downrange_difference) <= target_margin:
@@ -379,11 +381,14 @@ def generate_reference_trajectory(h0, V0, gamma0_deg, bank_initial, target_range
                 elif params['bank_2'] >= 5.0 and not both_2:
                     params['bank_2'] = params['bank_2'] - 1.0
                     undershoot_2 = True
-                    print('try section 1, reduce undershoot')
+                    print('try section 2, reduce undershoot')
                 # try section 3, use if bank angle 3 is not yet full lift up
                 elif params['bank_3'] >= 5.0:
                     params['bank_3'] = params['bank_3'] - 1.0
-                    print('try section 1, reduce undershoot')
+                    print('try section 3, reduce undershoot')
+                else:
+                    print('Target too far, not feasible under current conditions')
+                    searching = False
 
             # generate new reference trajectory
             ref_traj, g_load, heatflux = simulate_entry_trajectory(traj_eom, t0, tf, X0, 0, h_f, params,
@@ -444,7 +449,7 @@ V0 = 7003  # Entry velocity
 gamma0_deg = -3.21 # Entry flight path angle
 s0 = 0
 '''
-'''
+
 h0 = 79486.08873507846 # Entry altitude
 V0 = 7099.068400651032  # Entry velocity
 gamma0_deg = np.rad2deg(-0.04603989313249862) # Entry flight path angle
@@ -477,18 +482,21 @@ tspan = np.linspace(t0, tf, 1001)
 
 ref_traj, g_load, heatflux = simulate_entry_trajectory(traj_eom, t0, tf, X0, 0, h_f, params, reference_bank_angle, tspan)
 '''
+'''
+'''
 #heatload = np.trapz(heatflux, ref_traj.t)
 h0 = 79486.08873507846 # Entry altitude
 V0 = 7099.068400651032  # Entry velocity
 gamma0_deg = np.rad2deg(-0.04603989313249862)
+t0 = 327
 bank_initial = [5.0, 5.0, 5.0]
 target_margin = 5000
 max_g = 10
 max_heatflux = 1.0 * 10**6
-max_loads = max_g, max_heatflux
+max_loads = [max_g, max_heatflux]
 #ref_traj, g_load, heatflux, params = generate_reference_trajectory(h0, V0, gamma0_deg, bank_initial, 1.08646330e+06)
 ref_traj, g_load, heatflux, params = generate_reference_trajectory(
-    h0, V0, gamma0_deg, bank_initial, 1.08646330e+06, target_margin, max_loads)
+    h0, V0, gamma0_deg, t0, bank_initial, 1.08646330e+06, target_margin, max_loads)
 
 plt.plot(ref_traj.t, g_load)
 plt.xlabel('t [s]')
@@ -574,3 +582,4 @@ apollo_ref.save('apollo_data_vref.npz')
 # Load data back and check that it matches the original
 ref = ApolloReferenceData.load('apollo_data_vref.npz')
 assert np.allclose(ref.data, apollo_ref.data)
+'''

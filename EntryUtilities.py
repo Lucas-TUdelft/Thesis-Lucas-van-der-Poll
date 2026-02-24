@@ -2027,7 +2027,10 @@ class STSAerodynamicGuidance:
 
 class ApolloGuidance:
 
-    def __init__(self, ref_data: apollo_utils.ApolloReferenceData, bodies: environment.SystemOfBodies, K: float = 1):
+    def __init__(self, ref_data: apollo_utils.ApolloReferenceData,
+                 bodies: environment.SystemOfBodies,
+                 ground_station_list: list,
+                 K: float = 1):
         self.ref_data = ref_data
         self.K = K
 
@@ -2036,9 +2039,14 @@ class ApolloGuidance:
         self.earth = bodies.get_body("Earth")
         self.vehicle_flight_conditions = self.vehicle.flight_conditions
         self.aerodynamic_angle_calculator = self.vehicle_flight_conditions.aerodynamic_angle_calculator
-        ground_station = bodies.get_body("Earth").get_ground_station("LandingPad")
-        self.Target_vector0 = ground_station.station_state.get_cartesian_position(0.0)  # m
+
+        '''
+        self.rotation_matrix = spice_interface.compute_rotation_matrix_between_frames('IAU_EARTH', 'J2000', 327.0)
+        self.ground_station = bodies.get_body("Earth").get_ground_station("LandingPad")
+        self.Target_vector0 = self.ground_station.station_state.get_cartesian_position(327.0)  # m
+        self.Target_vector0 = np.dot(self.rotation_matrix,self.Target_vector0)
         self.Target_vector0_unit = self.Target_vector0 / np.linalg.norm(self.Target_vector0)
+        '''
 
         # flags
         self.initialised = False
@@ -2055,17 +2063,56 @@ class ApolloGuidance:
         self.Earth_radius = 6371 * 10**3 # m
         self.angle_of_attack = np.deg2rad(20) # rad
 
+        # Variables
         self.current_time = float("NaN")
         self.bank_angle_mag = 0 # rad
         self.bank_sign = 1.0 # [-]
         self.bank_angle = 0.0 # rad
 
+        # Entry interface values
+        self.h0 = 0.0
+        self.v0 = 0.0
+        self.gamma0 = 0.0
+        self.t0 = 0.0
+        self.s_target = 0.0
+
+        # ground station
+        station_radial_distance = self.Earth_radius + ground_station_list[0]
+        station_latitude = ground_station_list[1]
+        station_longitude = ground_station_list[2]
+        print(station_radial_distance, station_latitude, station_longitude)
+        cartesian_itrs = element_conversion.spherical_to_cartesian_elementwise(
+            station_radial_distance, station_latitude, station_longitude, 0, 0, 0)[:3]
+        rotation_model = self.earth.rotation_model
+        rotation_matrix = rotation_model.body_fixed_to_inertial_rotation(0.0)
+        cartesian_j2000 = np.dot(rotation_matrix, cartesian_itrs)
+        cartesian_state_6d = np.append(cartesian_j2000, [0.0, 0.0, 0.0])
+        cartesian_state_inertial = environment.transform_to_inertial_orientation(
+            np.append(cartesian_itrs, [0.0, 0.0, 0.0]),
+            0.0,
+            bodies.get_body('Earth').rotation_model
+        )
+        cartesian_body_fixed = np.dot(np.linalg.inv(rotation_matrix), cartesian_state_inertial[:3])
+        cartesian_body_fixed_6d = np.append(cartesian_body_fixed, [0.0, 0.0, 0.0])
+
+        reverted_spherical = element_conversion.cartesian_to_spherical(cartesian_state_6d)
+        reverted_spherical_rotated = element_conversion.cartesian_to_spherical(cartesian_body_fixed_6d)
+
+        #reverted_spherical = element_conversion.cartesian_to_spherical(target_cartesian_state0)
+        lat = np.rad2deg(reverted_spherical[1])
+        long = np.rad2deg(reverted_spherical[2])
+        print(lat, long)
+        lat2 = np.rad2deg(reverted_spherical_rotated[1])
+        long2 = np.rad2deg(reverted_spherical_rotated[2])
+        print(lat2, long2)
+        self.Target_vector0 = target_cartesian_state0[0:3]
+        self.Target_vector0_unit = self.Target_vector0 / np.linalg.norm(self.Target_vector0)
 
     @staticmethod
-    def from_file(filename: str, bodies: environment.SystemOfBodies, K: float = 1):
+    def from_file(filename: str, bodies: environment.SystemOfBodies, ground_station_list: list, K: float = 1):
         """Loads reference data from a file and initializes a new guidance controller"""
         ref_data = apollo_utils.ApolloReferenceData.load(filename)
-        return ApolloGuidance(ref_data, bodies, K)
+        return ApolloGuidance(ref_data, bodies, ground_station_list, K)
 
     def getAerodynamicAngles(self, current_time: float):
         self.updateGuidance(current_time)
@@ -2117,9 +2164,23 @@ class ApolloGuidance:
                 gamma = self.aerodynamic_angle_calculator.get_angle(
                     environment.AerodynamicsReferenceFrameAngles.flight_path_angle)
 
+                state_earthfixed = [self.Target_vector0[0],self.Target_vector0[1],self.Target_vector0[2],0,0,0]
+                spherical_elements = element_conversion.cartesian_to_spherical(state_earthfixed)
+                lat = np.rad2deg(spherical_elements[1])
+                long = np.rad2deg(spherical_elements[2])
+                print(lat, long)
 
+                # get entry interface values
                 if self.first_loop:
                     print('h:', h, 'v:', v, 'gamma:', gamma, 't', current_time )
+                    self.h0 = h
+                    self.v0 = v
+                    self.gamma0 = gamma
+                    self.t0 = current_time
+
+                    target_dot_product = np.dot(self.pos_earthfixed0_unit,self.Target_vector0_unit)
+                    target_dot_product = np.clip(target_dot_product, -1.0, 1.0)
+                    self.s_target = self.Earth_radius * np.arccos(target_dot_product)
                     self.first_loop = False
                 ref_data_row = self.ref_data.get_row_by_velocity(v)
 

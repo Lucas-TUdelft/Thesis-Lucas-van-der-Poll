@@ -8,6 +8,7 @@ import numpy as np
 
 import apollo_utils
 from plotting_functions import *
+from reference_trajectory_selection import *
 
 # Tudatpy imports
 import tudatpy
@@ -60,6 +61,7 @@ elif target_location == 'Natal':
     station_altitude = 30.0  # m
     station_latitude = -5.7842  # deg
     station_longitude = -35.2000  # deg
+ground_station_list = [station_altitude, station_latitude, station_longitude]
 
 # Define coordinate system
 global_frame_origin = 'Earth'
@@ -133,7 +135,8 @@ environment_setup.add_aerodynamic_coefficient_interface(bodies, 'Capsule', aero_
 environment_setup.add_flight_conditions(bodies, 'Capsule', 'Earth')
 
 # validation bank angle profile
-aerodynamic_guidance_object = Util.ApolloGuidance.from_file('apollo_data_vref.npz', bodies, K=1)
+aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
+    'apollo_data_vref.npz', bodies, ground_station_list, K=1)
 rotation_model_settings = environment_setup.rotation_model.aerodynamic_angle_based(
     'Earth', '', 'BodyFixed', aerodynamic_guidance_object.getAerodynamicAngles )
 environment_setup.add_rotation_model( bodies, 'Capsule', rotation_model_settings )
@@ -223,6 +226,25 @@ step_size = 1.0
 propagator_settings.integrator_settings = propagation_setup.integrator.runge_kutta_fixed_step_size(
     step_size,
     propagation_setup.integrator.CoefficientSets.rkf_56)
+
+# generate guidance entry conditions
+dynamics_simulator = numerical_simulation.create_dynamics_simulator(
+    bodies,
+    propagator_settings)
+
+h0 = aerodynamic_guidance_object.h0
+v0 = aerodynamic_guidance_object.v0
+gamma0 = np.rad2deg(aerodynamic_guidance_object.gamma0)
+t0 = aerodynamic_guidance_object.t0
+s_target = aerodynamic_guidance_object.s_target
+
+# acquire reference bank angle and generate corresponding reference trajectory
+bank_initial = [5.0, 5.0, 5.0]
+target_margin = 5000
+max_g = 10
+max_heatflux = 1.0 * 10**6
+max_loads = [max_g, max_heatflux]
+generate_reference_trajectory(h0, v0, gamma0, t0, bank_initial, s_target, target_margin, max_loads)
 
 # simulation
 dynamics_simulator = numerical_simulation.create_dynamics_simulator(
