@@ -260,7 +260,7 @@ def generate_reference_trajectory(h0, V0, gamma0_deg, t_entry, bank_initial, tar
     gamma0 = np.deg2rad(gamma0_deg)
     X0 = np.array([h0, s0, V0, gamma0])
     t0 = 0
-    tf = 700 - t_entry
+    tf = 500
     tspan = np.linspace(t0, tf, 10001)
 
     ref_traj, g_load, heatflux = simulate_entry_trajectory(traj_eom, t0, tf, X0, 0, h_f, params, reference_bank_angle,
@@ -303,6 +303,7 @@ def generate_reference_trajectory(h0, V0, gamma0_deg, t_entry, bank_initial, tar
 
     if abs(downrange_difference) <= target_margin:
         print('accepted bank angle profile')
+        print('bank_angle_profile:', params['bank_1'], params['bank_2'], params['bank_3'])
         return ref_traj, g_load, heatflux, params
     else:
         searching = True
@@ -352,18 +353,19 @@ def generate_reference_trajectory(h0, V0, gamma0_deg, t_entry, bank_initial, tar
                     params['bank_1'] = params['bank_1'] + 1.0
                     overshoot_1 = True
                     print('try section 1, reduce overshoot, 100% margin')
-                # try section 2, use if less than 80% margin and bank angle 2 is not yet full lift down and bank angle
+                # try section 2, use if less than margin and bank angle 2 is not yet full lift down and bank angle
                 # variation in section 2 has not yet overshot and undershot the target
                 elif closest_to_margin[1] <= 1.0 and params['bank_2'] <= 175.0 and not both_2:
                     params['bank_2'] = params['bank_2'] + 1.0
                     overshoot_2 = True
                     print('try section 2, reduce overshoot, 100% margin')
-                # try section 3, use if less than 80% margin and bank angle 3 is not yet full lift down
+                # try section 3, use if less than margin and bank angle 3 is not yet full lift down
                 elif closest_to_margin[2] <= 1.0 and params['bank_3'] <= 175.0:
                     params['bank_3'] = params['bank_3'] + 1.0
                     print('try section 3, reduce overshoot, 100% margin')
                 else:
                     print('target too close, not feasible under current conditions')
+                    print('bank_angle_profile:', params['bank_1'], params['bank_2'], params['bank_3'])
                     searching = False
 
 
@@ -388,6 +390,7 @@ def generate_reference_trajectory(h0, V0, gamma0_deg, t_entry, bank_initial, tar
                     print('try section 3, reduce undershoot')
                 else:
                     print('Target too far, not feasible under current conditions')
+                    print('bank_angle_profile:', params['bank_1'], params['bank_2'], params['bank_3'])
                     searching = False
 
             # generate new reference trajectory
@@ -433,14 +436,69 @@ def generate_reference_trajectory(h0, V0, gamma0_deg, t_entry, bank_initial, tar
             if abs(downrange_difference) <= target_margin:
                 print('accepted bank angle profile in', iterations, 'iterations')
                 searching = False
+                print('bank_angle_profile:', params['bank_1'], params['bank_2'], params['bank_3'])
                 return ref_traj, g_load, heatflux, params
 
-            if iterations >= 100:
+            if iterations >= 300:
                 print('no accepted bank angle profile, returning best fit')
+                print('bank_angle_profile:', params['bank_1'], params['bank_2'], params['bank_3'])
                 searching = False
 
 
     return ref_traj, g_load, heatflux, params
+
+
+def generate_reference_trajectory_file(h0, V0, gamma0_deg, t_entry, bank_initial, target_range, target_margin, max_loads):
+    '''
+
+    :param h0:
+    :param V0:
+    :param gamma0_deg:
+    :param t_entry:
+    :param bank_initial:
+    :param target_range:
+    :param target_margin:
+    :param max_loads:
+    :return:
+    '''
+
+    ref_traj, g_load, heatflux, params = generate_reference_trajectory(
+        h0, V0, gamma0_deg, t_entry, bank_initial, target_range, target_margin, max_loads
+    )
+
+    ref_tf = ref_traj.t[-1]
+    ref_tspan_rev = ref_traj.t[::-1]  # Reverse the time span
+    Xf = np.copy(ref_traj.X[-1, :])
+
+    # Ensure monotonic decreasing V
+    def V_event(t, X, p, _):
+        return X[3] - 5500
+
+    V_event.direction = 1
+    V_event.terminal = True
+
+    X_and_lam0 = np.concatenate((Xf, [-1 / np.tan(Xf[3]), 0, 0, 0]))
+    output = solve_ivp(traj_eom_with_costates,  # lambda t,X,p,u: -traj_eom_with_costates(t,X,p,u),
+                       [ref_tf, 0],
+                       X_and_lam0,
+                       t_eval=ref_traj.t[::-1],
+                       rtol=1e-8,
+                       events=V_event,
+                       args=(params, reference_bank_angle))
+    lam = output.y.T[:, 4:][::-1]
+    X_and_lam = output.y.T[::-1]
+
+    np.set_printoptions(suppress=True)
+
+    # Test loading and saving of data
+    apollo_ref = ApolloReferenceData(X_and_lam, ref_traj.u, ref_traj.t, params)
+    apollo_ref.save('apollo_data_vref.npz')
+
+    # Load data back and check that it matches the original
+    ref = ApolloReferenceData.load('apollo_data_vref.npz')
+    assert np.allclose(ref.data, apollo_ref.data)
+
+    return
 
 # Initial conditions
 '''

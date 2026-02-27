@@ -2030,6 +2030,7 @@ class ApolloGuidance:
     def __init__(self, ref_data: apollo_utils.ApolloReferenceData,
                  bodies: environment.SystemOfBodies,
                  ground_station_list: list,
+                 estimated_flight_time: float,
                  K: float = 1):
         self.ref_data = ref_data
         self.K = K
@@ -2040,13 +2041,11 @@ class ApolloGuidance:
         self.vehicle_flight_conditions = self.vehicle.flight_conditions
         self.aerodynamic_angle_calculator = self.vehicle_flight_conditions.aerodynamic_angle_calculator
 
-        '''
-        self.rotation_matrix = spice_interface.compute_rotation_matrix_between_frames('IAU_EARTH', 'J2000', 327.0)
+        #self.rotation_matrix = spice_interface.compute_rotation_matrix_between_frames('IAU_EARTH', 'J2000', 327.0)
         self.ground_station = bodies.get_body("Earth").get_ground_station("LandingPad")
-        self.Target_vector0 = self.ground_station.station_state.get_cartesian_position(327.0)  # m
-        self.Target_vector0 = np.dot(self.rotation_matrix,self.Target_vector0)
+        self.Target_vector0 = self.ground_station.station_state.get_cartesian_position(0.0)  # m
+        #self.Target_vector0 = np.dot(self.rotation_matrix,self.Target_vector0)
         self.Target_vector0_unit = self.Target_vector0 / np.linalg.norm(self.Target_vector0)
-        '''
 
         # flags
         self.initialised = False
@@ -2062,12 +2061,15 @@ class ApolloGuidance:
         self.min_D_m = 0.2 * 9.81 # - (0.2 g's)
         self.Earth_radius = 6371 * 10**3 # m
         self.angle_of_attack = np.deg2rad(20) # rad
+        self.Earth_rate = 7.2921 * 10 ** (-5) # rad/s
 
         # Variables
         self.current_time = float("NaN")
         self.bank_angle_mag = 0 # rad
         self.bank_sign = 1.0 # [-]
         self.bank_angle = 0.0 # rad
+        self.adjustment_angle = 0.0 # rad
+        self.estimated_flight_time = estimated_flight_time # s
 
         # Entry interface values
         self.h0 = 0.0
@@ -2076,13 +2078,33 @@ class ApolloGuidance:
         self.t0 = 0.0
         self.s_target = 0.0
 
+        ''' 
+        station_radial_distance = self.Earth_radius + ground_station_list[0]
+        station_latitude = np.deg2rad(ground_station_list[1])
+        station_longitude = np.deg2rad(ground_station_list[2])
+        cartesian_state = element_conversion.spherical_to_cartesian_elementwise(
+            station_radial_distance, station_latitude, station_longitude, 0, 0, 0)[:3]
+        cartesian_state_inertial = environment.transform_to_inertial_orientation(
+            np.append(cartesian_state, [0.0, 0.0, 0.0]),
+            0.0,
+            self.earth.rotation_model
+        )
+        rotation_matrix = self.earth.rotation_model.body_fixed_to_inertial_rotation(0.0)
+        self.Target_vector0 = np.dot(np.linalg.inv(rotation_matrix), cartesian_state_inertial[:3])
+        self.Target_vector0_unit = self.Target_vector0 / np.linalg.norm(self.Target_vector0)
+        print(self.Target_vector0_unit)
+        '''
+
+        '''
         # ground station
         station_radial_distance = self.Earth_radius + ground_station_list[0]
-        station_latitude = ground_station_list[1]
-        station_longitude = ground_station_list[2]
+        station_latitude = np.deg2rad(ground_station_list[1])
+        station_longitude = np.deg2rad(ground_station_list[2])
         print(station_radial_distance, station_latitude, station_longitude)
+
         cartesian_itrs = element_conversion.spherical_to_cartesian_elementwise(
             station_radial_distance, station_latitude, station_longitude, 0, 0, 0)[:3]
+        print(cartesian_itrs)
         rotation_model = self.earth.rotation_model
         rotation_matrix = rotation_model.body_fixed_to_inertial_rotation(0.0)
         cartesian_j2000 = np.dot(rotation_matrix, cartesian_itrs)
@@ -2101,18 +2123,20 @@ class ApolloGuidance:
         #reverted_spherical = element_conversion.cartesian_to_spherical(target_cartesian_state0)
         lat = np.rad2deg(reverted_spherical[1])
         long = np.rad2deg(reverted_spherical[2])
-        print(lat, long)
+        print('reverted spherical:', lat, long)
         lat2 = np.rad2deg(reverted_spherical_rotated[1])
         long2 = np.rad2deg(reverted_spherical_rotated[2])
-        print(lat2, long2)
-        self.Target_vector0 = target_cartesian_state0[0:3]
+        print('reverted spherical rotated:', lat2, long2)
+        self.Target_vector0 = cartesian_body_fixed
         self.Target_vector0_unit = self.Target_vector0 / np.linalg.norm(self.Target_vector0)
+        '''
 
     @staticmethod
-    def from_file(filename: str, bodies: environment.SystemOfBodies, ground_station_list: list, K: float = 1):
+    def from_file(filename: str, bodies: environment.SystemOfBodies, ground_station_list: list,
+                  estimated_flight_time: float, K: float = 1):
         """Loads reference data from a file and initializes a new guidance controller"""
         ref_data = apollo_utils.ApolloReferenceData.load(filename)
-        return ApolloGuidance(ref_data, bodies, ground_station_list, K)
+        return ApolloGuidance(ref_data, bodies, ground_station_list, estimated_flight_time, K)
 
     def getAerodynamicAngles(self, current_time: float):
         self.updateGuidance(current_time)
@@ -2153,8 +2177,7 @@ class ApolloGuidance:
                     self.pos_earthfixed0 = self.vehicle.flight_conditions.body_centered_body_fixed_state[0:3]
                     self.pos_earthfixed0_unit = self.pos_earthfixed0 / np.linalg.norm(self.pos_earthfixed0)
 
-                    self.n_ref = np.cross(self.pos_earthfixed0_unit, self.Target_vector0_unit)
-                    self.n_ref_unit = self.n_ref / np.linalg.norm(self.n_ref)
+
 
                     self.initialised = True
 
@@ -2164,12 +2187,6 @@ class ApolloGuidance:
                 gamma = self.aerodynamic_angle_calculator.get_angle(
                     environment.AerodynamicsReferenceFrameAngles.flight_path_angle)
 
-                state_earthfixed = [self.Target_vector0[0],self.Target_vector0[1],self.Target_vector0[2],0,0,0]
-                spherical_elements = element_conversion.cartesian_to_spherical(state_earthfixed)
-                lat = np.rad2deg(spherical_elements[1])
-                long = np.rad2deg(spherical_elements[2])
-                print(lat, long)
-
                 # get entry interface values
                 if self.first_loop:
                     print('h:', h, 'v:', v, 'gamma:', gamma, 't', current_time )
@@ -2178,10 +2195,27 @@ class ApolloGuidance:
                     self.gamma0 = gamma
                     self.t0 = current_time
 
+                    #'''
+                    self.adjustment_angle = self.Earth_rate * (self.estimated_flight_time - self.t0)
+                    print('adjustment angle:', np.rad2deg(self.adjustment_angle))
+                    rotation_matrix = np.array([
+                        [np.cos(self.adjustment_angle), -1 * np.sin(self.adjustment_angle), 0],
+                        [np.sin(self.adjustment_angle), np.cos(self.adjustment_angle), 0],
+                        [0, 0, 1]
+                    ])
+                    self.Target_vector0 = np.dot(rotation_matrix, self.Target_vector0)
+                    self.Target_vector0_unit = self.Target_vector0 / np.linalg.norm(self.Target_vector0)
+                    #'''
+
                     target_dot_product = np.dot(self.pos_earthfixed0_unit,self.Target_vector0_unit)
                     target_dot_product = np.clip(target_dot_product, -1.0, 1.0)
                     self.s_target = self.Earth_radius * np.arccos(target_dot_product)
+
+                    self.n_ref = np.cross(self.pos_earthfixed0_unit, self.Target_vector0_unit)
+                    self.n_ref_unit = self.n_ref / np.linalg.norm(self.n_ref)
+
                     self.first_loop = False
+
                 ref_data_row = self.ref_data.get_row_by_velocity(v)
 
                 s_ref = ref_data_row[2]
@@ -2207,7 +2241,7 @@ class ApolloGuidance:
 
                 self.cross_track_value = np.dot(np.cross(self.vel_earthfixed_unit, self.pos_earthfixed_unit), self.n_ref)
                 if abs(self.cross_track_value) >= 1e-6:
-                    self.bank_sign = np.sign(self.cross_track_value)
+                    self.bank_sign = -1 * np.sign(self.cross_track_value)
 
                 self.bank_angle = self.bank_sign * self.bank_angle_mag
 

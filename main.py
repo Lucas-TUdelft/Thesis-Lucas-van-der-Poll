@@ -50,17 +50,41 @@ bodies_to_create = ['Earth', 'Moon', 'Sun']
 # Define Ground station settings
 target_location = 'Cabo Verde'
 if target_location == 'Paris':
+    speed = 7505
+    heading_angle = np.deg2rad(35.0)
     station_altitude = 35.0 # m
-    station_latitude = 48.8575 # deg
-    station_longitude = 2.3514 # deg
+    station_latitude = np.deg2rad(48.8575) # rad
+    station_longitude = np.deg2rad(2.3514) # rad
+    estimated_flight_time = 1080
 elif target_location == 'Cabo Verde':
+    speed = 6960
+    heading_angle = np.deg2rad(68.5)
     station_altitude = 37.0 # m
-    station_latitude = 14.9198 # deg
-    station_longitude = -23.5073 # deg
+    station_latitude = np.deg2rad(14.9198) # rad
+    station_longitude = np.deg2rad(-23.5073) # rad
+    estimated_flight_time = 560 # s
 elif target_location == 'Natal':
+    speed = 6.5E3
+    heading_angle = np.deg2rad(125.5)
     station_altitude = 30.0  # m
-    station_latitude = -5.7842  # deg
-    station_longitude = -35.2000  # deg
+    station_latitude = np.deg2rad(-5.7842)  # rad
+    station_longitude = np.deg2rad(-35.2000)  # rad
+    estimated_flight_time = 410 # s
+elif target_location == 'Canarias':
+    speed = 7275
+    heading_angle = np.deg2rad(50.5)
+    station_altitude = 0.0  # m
+    station_latitude = np.deg2rad(28.2916) # rad
+    station_longitude = np.deg2rad(-16.6291) # rad
+    estimated_flight_time = 740  # s
+elif target_location == 'Azores':
+    speed = 7365
+    heading_angle = np.deg2rad(31.5)
+    station_altitude = 0.0  # m
+    station_latitude = np.deg2rad(37.7412) # rad
+    station_longitude = np.deg2rad(-25.6756) # rad
+    estimated_flight_time = 730  # s
+
 ground_station_list = [station_altitude, station_latitude, station_longitude]
 
 # Define coordinate system
@@ -134,9 +158,9 @@ environment_setup.add_aerodynamic_coefficient_interface(bodies, 'Capsule', aero_
 # flight conditions
 environment_setup.add_flight_conditions(bodies, 'Capsule', 'Earth')
 
-# validation bank angle profile
+# bank angle guidance
 aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
-    'apollo_data_vref.npz', bodies, ground_station_list, K=1)
+    'apollo_data_vref.npz', bodies, ground_station_list, estimated_flight_time, K=1)
 rotation_model_settings = environment_setup.rotation_model.aerodynamic_angle_based(
     'Earth', '', 'BodyFixed', aerodynamic_guidance_object.getAerodynamicAngles )
 environment_setup.add_rotation_model( bodies, 'Capsule', rotation_model_settings )
@@ -196,9 +220,7 @@ acceleration_models = propagation_setup.create_acceleration_models(
 radial_distance = spice_interface.get_average_radius('Earth') + 157.7E3
 latitude = np.deg2rad(5.3)
 longitude = np.deg2rad(-50.0)
-speed = 7050
 flight_path_angle = np.deg2rad(-0.8)
-heading_angle = np.deg2rad(68.5)
 
 # Convert spherical elements to body-fixed cartesian coordinates
 initial_cartesian_state_body_fixed = element_conversion.spherical_to_cartesian_elementwise(
@@ -237,6 +259,8 @@ v0 = aerodynamic_guidance_object.v0
 gamma0 = np.rad2deg(aerodynamic_guidance_object.gamma0)
 t0 = aerodynamic_guidance_object.t0
 s_target = aerodynamic_guidance_object.s_target
+estimated_flight_time = result2array(dynamics_simulator.dependent_variable_history)[:, 0][-1]
+print('estimated flight time:', estimated_flight_time)
 
 # acquire reference bank angle and generate corresponding reference trajectory
 bank_initial = [5.0, 5.0, 5.0]
@@ -244,7 +268,13 @@ target_margin = 5000
 max_g = 10
 max_heatflux = 1.0 * 10**6
 max_loads = [max_g, max_heatflux]
-generate_reference_trajectory(h0, v0, gamma0, t0, bank_initial, s_target, target_margin, max_loads)
+generate_reference_trajectory_file(h0, v0, gamma0, t0, bank_initial, s_target, target_margin, max_loads)
+
+# bank angle guidance
+aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
+    'apollo_data_vref.npz', bodies, ground_station_list, estimated_flight_time, K=1)
+bodies.get_body('Capsule').rotation_model.reset_aerodynamic_angle_function(
+        aerodynamic_guidance_object.getAerodynamicAngles)
 
 # simulation
 dynamics_simulator = numerical_simulation.create_dynamics_simulator(
@@ -269,5 +299,5 @@ altitude_plot(h, dependent_variables_time)
 bank_plot(bank, dependent_variables_time)
 velocity_plot(vel, dependent_variables_time)
 gload_plot(g, dependent_variables_time)
-latlong_plot(latitude,longitude,station_latitude,station_longitude)
+latlong_plot(latitude,longitude,np.rad2deg(station_latitude),np.rad2deg(station_longitude))
 
