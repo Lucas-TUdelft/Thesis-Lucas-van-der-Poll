@@ -322,3 +322,33 @@ def state_difference_plot(differences,times,labels):
     fig.tight_layout()
     plt.show()
     return
+
+def sensitivity_error_plot(uncertainties,max_errors):
+    '''
+    Plot the maximum position error
+
+    Parmeters
+    ----------
+    uncertainties : list
+        uncertainties used
+    max_errors : list
+        maximum error attained in each of the used benchmarks
+
+    Returns
+    ----------
+    none
+    '''
+
+    fig = plt.figure(figsize=(8, 8))
+    ax1 = fig.add_subplot(111)
+
+    ax1.loglog(uncertainties,max_errors)
+    ax1.scatter(uncertainties,max_errors)
+    ax1.set_xlabel('(velocity uncertainty x 10) [m/s]') # &  position uncertainty [m]
+    ax1.set_ylabel('average position error [m]')
+    ax1.grid()
+
+    fig.tight_layout()
+    plt.show()
+
+    return

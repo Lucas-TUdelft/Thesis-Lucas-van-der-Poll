@@ -18,6 +18,7 @@ from tudatpy.kernel.interface import spice_interface
 from tudatpy.kernel.numerical_simulation import environment_setup
 from tudatpy.kernel.numerical_simulation import propagation_setup
 from tudatpy.kernel.numerical_simulation import environment
+from tudatpy.kernel.numerical_simulation import estimation_setup
 from tudatpy.kernel import numerical_simulation
 from tudatpy.kernel.astro import element_conversion
 from tudatpy.kernel.math import interpolators
@@ -48,7 +49,7 @@ termination_altitude = 30.0E3  # m
 bodies_to_create = ['Earth', 'Moon', 'Sun']
 
 # Define Ground station settings
-target_location = 'Paris'
+target_location = 'Cabo Verde'
 if target_location == 'Paris':
     speed = 7505
     heading_angle = np.deg2rad(35.0)
@@ -249,10 +250,14 @@ propagator_settings.integrator_settings = propagation_setup.integrator.runge_kut
     step_size,
     propagation_setup.integrator.CoefficientSets.rkf_56)
 
+
 # generate guidance entry conditions
 dynamics_simulator = numerical_simulation.create_dynamics_simulator(
     bodies,
     propagator_settings)
+
+baseline_state_history = dynamics_simulator.state_history
+dependent_variable_history = dynamics_simulator.dependent_variable_history
 
 h0 = aerodynamic_guidance_object.h0
 v0 = aerodynamic_guidance_object.v0
@@ -276,17 +281,147 @@ aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
 bodies.get_body('Capsule').rotation_model.reset_aerodynamic_angle_function(
         aerodynamic_guidance_object.getAerodynamicAngles)
 
-# simulation
-dynamics_simulator = numerical_simulation.create_dynamics_simulator(
-    bodies,
-    propagator_settings)
 
-state_history = dynamics_simulator.state_history
-dependent_variables = dynamics_simulator.dependent_variable_history
+uncertainties = [10,8,6,4,2,1,0.5,0.25,0.1]
+average_position_errors = []
 
+
+for j in range(len(uncertainties)):
+    print('uncertainty:', uncertainties[j])
+    # monte carlo variation
+    sigma_r = 0.0 #uncertainties[j]
+    sigma_v = uncertainties[j] / 10
+
+    covariance_matrix = np.diag([
+        sigma_r ** 2,
+        sigma_r ** 2,
+        sigma_r ** 2,
+        sigma_v ** 2,
+        sigma_v ** 2,
+        sigma_v ** 2,
+    ])
+
+    N_loops = 100
+
+    write_results_to_file = False
+    output_path = current_dir + '/SimulationOutput/perturbations/' if write_results_to_file else None
+
+    times = []
+    errors = []
+    perturbations = []
+    maximum_errors = []
+    for i in range(N_loops):
+        print('Loop:', i+1)
+        perturbation = np.random.multivariate_normal(
+            mean=np.zeros(6),
+            cov=covariance_matrix
+        )
+        perturbations.append(str(perturbation))
+
+        perturbed_state = initial_cartesian_state_inertial + perturbation
+        propagator_settings.initial_states = perturbed_state
+
+        # simulation
+        dynamics_simulator = numerical_simulation.create_dynamics_simulator(
+            bodies,
+            propagator_settings)
+
+        perturbed_state_history = dynamics_simulator.state_history
+        dependent_variables = dynamics_simulator.dependent_variable_history
+
+        perturbation_state_difference = Util.compare_benchmarks(baseline_state_history,
+                                                                perturbed_state_history,
+                                                                output_path,
+                                                                'perturbation_state_difference.dat')
+
+        perturbation_state_difference_array = result2array(perturbation_state_difference)
+        e_r = perturbation_state_difference_array[:, 1:4]
+
+        time = perturbation_state_difference.keys()
+
+        e_r_mag = []
+        for k in range(len(e_r)):
+            error_magnitude = np.sqrt((e_r[k][0] ** 2) + (e_r[k][1] ** 2) + (e_r[k][2] ** 2))
+            e_r_mag.append(error_magnitude)
+
+        times.append(time)
+        errors.append(e_r_mag)
+
+        e_max = max(e_r_mag)
+        maximum_errors.append(e_max)
+
+    average_position_error = np.mean(np.asarray(maximum_errors))
+    average_position_errors.append(average_position_error)
+
+sensitivity_error_plot(uncertainties,average_position_errors)
+'''
+sigma_r = 2.0 # m
+sigma_v = 0.2 # m/s
+
+covariance_matrix = np.diag([
+    sigma_r ** 2,
+    sigma_r ** 2,
+    sigma_r ** 2,
+    sigma_v ** 2,
+    sigma_v ** 2,
+    sigma_v ** 2,
+])
+
+N_loops = 5
+
+write_results_to_file = True
+output_path = current_dir + '/SimulationOutput/perturbations/' if write_results_to_file else None
+
+times = []
+errors = []
+perturbations = []
+for i in range(N_loops):
+    perturbation = np.random.multivariate_normal(
+        mean= np.zeros(6),
+        cov=covariance_matrix
+    )
+    perturbations.append(str(perturbation))
+
+    perturbed_state = initial_cartesian_state_inertial + perturbation
+    propagator_settings.initial_states = perturbed_state
+
+    # simulation
+    dynamics_simulator = numerical_simulation.create_dynamics_simulator(
+        bodies,
+        propagator_settings)
+
+    perturbed_state_history = dynamics_simulator.state_history
+    dependent_variables = dynamics_simulator.dependent_variable_history
+
+    perturbation_state_difference = Util.compare_benchmarks(baseline_state_history,
+                                                         perturbed_state_history,
+                                                         output_path,
+                                                         'perturbation_state_difference.dat')
+
+    perturbation_state_difference_array = result2array(perturbation_state_difference)
+    e_r = perturbation_state_difference_array[:, 1:4]
+
+    time = perturbation_state_difference.keys()
+
+    e_r_mag = []
+    for j in range(len(e_r)):
+        error_magnitude = np.sqrt((e_r[j][0] ** 2) + (e_r[j][1] ** 2) + (e_r[j][2] ** 2))
+        e_r_mag.append(error_magnitude)
+
+    times.append(time)
+    errors.append(e_r_mag)
+
+    e_max = max(e_r_mag)
+    maximum_errors.append(e_max)
+    
+
+error_plot(times,errors,perturbations)
+'''
+'''
 state_history_array = result2array(state_history)
 dependent_variables_array = result2array(dependent_variables)
-
+'''
+'''
 h = dependent_variables_array[:, 2]
 latitude = np.rad2deg(dependent_variables_array[:, 16])
 longitude = np.rad2deg(dependent_variables_array[:, 17])
@@ -300,4 +435,4 @@ bank_plot(bank, dependent_variables_time)
 velocity_plot(vel, dependent_variables_time)
 gload_plot(g, dependent_variables_time)
 latlong_plot(latitude,longitude,np.rad2deg(station_latitude),np.rad2deg(station_longitude))
-
+'''

@@ -2043,6 +2043,8 @@ class ApolloGuidance:
 
         #self.rotation_matrix = spice_interface.compute_rotation_matrix_between_frames('IAU_EARTH', 'J2000', 327.0)
         self.ground_station = bodies.get_body("Earth").get_ground_station("LandingPad")
+        self.ground_station_latitude = self.ground_station.station_state.geodetic_positon_at_reference_epoch[1]
+        self.ground_station_longitude = self.ground_station.station_state.geodetic_positon_at_reference_epoch[2]
         self.Target_vector0 = self.ground_station.station_state.get_cartesian_position(0.0)  # m
         #self.Target_vector0 = np.dot(self.rotation_matrix,self.Target_vector0)
         self.Target_vector0_unit = self.Target_vector0 / np.linalg.norm(self.Target_vector0)
@@ -2062,6 +2064,7 @@ class ApolloGuidance:
         self.Earth_radius = 6371 * 10**3 # m
         self.angle_of_attack = np.deg2rad(20) # rad
         self.Earth_rate = 7.2921 * 10 ** (-5) # rad/s
+        self.deadband = np.deg2rad(2.0)
 
         # Variables
         self.current_time = float("NaN")
@@ -2070,6 +2073,10 @@ class ApolloGuidance:
         self.bank_angle = 0.0 # rad
         self.adjustment_angle = 0.0 # rad
         self.estimated_flight_time = estimated_flight_time # s
+        self.current_heading = 0.0 # rad
+        self.current_latitude = 0.0 # rad
+        self.current_longitude = 0.0 # rad
+        self.Target_heading = 0.0
 
         # Entry interface values
         self.h0 = 0.0
@@ -2211,9 +2218,6 @@ class ApolloGuidance:
                     target_dot_product = np.clip(target_dot_product, -1.0, 1.0)
                     self.s_target = self.Earth_radius * np.arccos(target_dot_product)
 
-                    self.n_ref = np.cross(self.pos_earthfixed0_unit, self.Target_vector0_unit)
-                    self.n_ref_unit = self.n_ref / np.linalg.norm(self.n_ref)
-
                     self.first_loop = False
 
                 ref_data_row = self.ref_data.get_row_by_velocity(v)
@@ -2236,12 +2240,36 @@ class ApolloGuidance:
                 self.bank_angle_mag = max(min(self.bank_angle_mag, np.pi), 0)
 
                 # lateral guidance
+                self.current_heading = self.aerodynamic_angle_calculator.get_angle(
+                    environment.AerodynamicsReferenceFrameAngles.heading_angle)
+                self.current_latitude = self.aerodynamic_angle_calculator.get_angle(
+                    environment.AerodynamicsReferenceFrameAngles.latitude_angle)
+                self.current_longitude = self.aerodynamic_angle_calculator.get_angle(
+                    environment.AerodynamicsReferenceFrameAngles.longitude_angle
+                )
+
+                delta_long = self.ground_station_longitude - self.current_longitude
+                x = np.sin(delta_long) * np.cos(self.ground_station_latitude)
+                y = np.cos(self.current_latitude) * np.sin(self.ground_station_latitude) -\
+                    np.sin(self.current_latitude) * np.cos(self.ground_station_latitude) * np.cos(delta_long)
+                self.Target_heading = np.arctan2(x,y)
+
+                heading_error = self.current_heading - self.Target_heading
+                if heading_error >= self.deadband:
+                    self.bank_sign = 1.0
+                elif heading_error <= self.deadband:
+                    self.bank_sign = -1.0
+
+
+                '''
+                # lateral guidance
                 self.vel_earthfixed = self.vehicle.flight_conditions.body_centered_body_fixed_state[3:6]
                 self.vel_earthfixed_unit = self.vel_earthfixed / np.linalg.norm(self.vel_earthfixed)
 
-                self.cross_track_value = np.dot(np.cross(self.vel_earthfixed_unit, self.pos_earthfixed_unit), self.n_ref)
+                self.cross_track_value = np.dot(np.cross(self.pos_earthfixed_unit, self.vel_earthfixed_unit), self.n_ref_unit)
                 if abs(self.cross_track_value) >= 1e-6:
-                    self.bank_sign = -1 * np.sign(self.cross_track_value)
+                    self.bank_sign = np.sign(self.cross_track_value)
+                '''
 
                 self.bank_angle = self.bank_sign * self.bank_angle_mag
 
