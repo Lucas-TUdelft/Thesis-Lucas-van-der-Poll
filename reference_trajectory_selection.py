@@ -242,7 +242,7 @@ def generate_reference_trajectory(h0, V0, gamma0_deg, t_entry, bank_initial, tar
 
     params = {'H': 7200,
               'rho0': 1.225,  # kg/m^3
-              'beta': 246.7,
+              'beta': 137.84,
               'LD': 0.26,
               'R_m': 6371e3,
               'g': 9.81,
@@ -518,7 +518,7 @@ bank3 = 0.0
 # Model params
 params = {'H': 7200,
           'rho0': 1.225, # kg/m^3
-          'beta': 246.7,
+          'beta': 137.84,
           'LD': 0.26,
           'R_m': 6371e3,
           'g': 9.81,
