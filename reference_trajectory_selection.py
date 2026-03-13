@@ -295,15 +295,15 @@ def generate_reference_trajectory(h0, V0, gamma0_deg, t_entry, bank_initial, tar
                          max(max_gload_array[1],max_heatflux_array[1]),
                          max(max_gload_array[2],max_heatflux_array[2])]
 
-    print(closest_to_margin)
+    #print(closest_to_margin)
 
     reference_range = ref_traj.X[-1][1]
-    print(reference_range, target_range)
+    #print(reference_range, target_range)
     downrange_difference = reference_range - target_range
 
     if abs(downrange_difference) <= target_margin:
-        print('accepted bank angle profile')
-        print('bank_angle_profile:', params['bank_1'], params['bank_2'], params['bank_3'])
+        #print('accepted bank angle profile')
+        #print('bank_angle_profile:', params['bank_1'], params['bank_2'], params['bank_3'])
         return ref_traj, g_load, heatflux, params
     else:
         searching = True
@@ -336,36 +336,36 @@ def generate_reference_trajectory(h0, V0, gamma0_deg, t_entry, bank_initial, tar
                 if closest_to_margin[0] <= 0.8 and params['bank_1'] <= 175.0 and not both_1:
                     params['bank_1'] = params['bank_1'] + 1.0
                     overshoot_1 = True
-                    print('try section 1, reduce overshoot, 80% margin')
+                    #print('try section 1, reduce overshoot, 80% margin')
                 # try section 2, use if less than 80% margin, bank angle 2 is not yet full lift down and bank angle
                 # variation in section 2 has not yet overshot and undershot the target
                 elif closest_to_margin[1] <= 0.8 and params['bank_2'] <= 175.0 and not both_2:
                     params['bank_2'] = params['bank_2'] + 1.0
                     overshoot_2 = True
-                    print('try section 2, reduce overshoot, 80% margin')
+                    #print('try section 2, reduce overshoot, 80% margin')
                 # try section 3, use if less than 80% margin and bank angle 3 is not yet full lift down
                 elif closest_to_margin[2] <= 0.8 and params['bank_3'] <= 175.0:
                     params['bank_3'] = params['bank_3'] + 1.0
-                    print('try section 3, reduce overshoot, 80% margin')
+                    #print('try section 3, reduce overshoot, 80% margin')
                 # try section 1, use if less than margin and bank angle 1 is not yet full lift down and bank angle
                 # variation in section 1 has not yet overshot and undershot the target
                 elif closest_to_margin[0] <= 1.0 and params['bank_1'] <= 175.0 and not both_1:
                     params['bank_1'] = params['bank_1'] + 1.0
                     overshoot_1 = True
-                    print('try section 1, reduce overshoot, 100% margin')
+                    #print('try section 1, reduce overshoot, 100% margin')
                 # try section 2, use if less than margin and bank angle 2 is not yet full lift down and bank angle
                 # variation in section 2 has not yet overshot and undershot the target
                 elif closest_to_margin[1] <= 1.0 and params['bank_2'] <= 175.0 and not both_2:
                     params['bank_2'] = params['bank_2'] + 1.0
                     overshoot_2 = True
-                    print('try section 2, reduce overshoot, 100% margin')
+                    #print('try section 2, reduce overshoot, 100% margin')
                 # try section 3, use if less than margin and bank angle 3 is not yet full lift down
                 elif closest_to_margin[2] <= 1.0 and params['bank_3'] <= 175.0:
                     params['bank_3'] = params['bank_3'] + 1.0
-                    print('try section 3, reduce overshoot, 100% margin')
+                    #print('try section 3, reduce overshoot, 100% margin')
                 else:
-                    print('target too close, not feasible under current conditions')
-                    print('bank_angle_profile:', params['bank_1'], params['bank_2'], params['bank_3'])
+                    #print('target too close, not feasible under current conditions')
+                    #print('bank_angle_profile:', params['bank_1'], params['bank_2'], params['bank_3'])
                     searching = False
 
 
@@ -377,20 +377,20 @@ def generate_reference_trajectory(h0, V0, gamma0_deg, t_entry, bank_initial, tar
                 if params['bank_1'] >= 5.0 and not both_1:
                     params['bank_1'] = params['bank_1'] - 1.0
                     undershoot_1 = True
-                    print('try section 1, reduce undershoot')
+                    #print('try section 1, reduce undershoot')
                 # try section 2, use if bank angle 2 is not yet full lift up and bank angle
                 # variation in section 2 has not yet overshot and undershot the target
                 elif params['bank_2'] >= 5.0 and not both_2:
                     params['bank_2'] = params['bank_2'] - 1.0
                     undershoot_2 = True
-                    print('try section 2, reduce undershoot')
+                    #print('try section 2, reduce undershoot')
                 # try section 3, use if bank angle 3 is not yet full lift up
                 elif params['bank_3'] >= 5.0:
                     params['bank_3'] = params['bank_3'] - 1.0
-                    print('try section 3, reduce undershoot')
+                    #print('try section 3, reduce undershoot')
                 else:
-                    print('Target too far, not feasible under current conditions')
-                    print('bank_angle_profile:', params['bank_1'], params['bank_2'], params['bank_3'])
+                    #print('Target too far, not feasible under current conditions')
+                    #print('bank_angle_profile:', params['bank_1'], params['bank_2'], params['bank_3'])
                     searching = False
 
             # generate new reference trajectory
@@ -428,20 +428,20 @@ def generate_reference_trajectory(h0, V0, gamma0_deg, t_entry, bank_initial, tar
                                  max(max_gload_array[1], max_heatflux_array[1]),
                                  max(max_gload_array[2], max_heatflux_array[2])]
 
-            print('closest_to_margin:', closest_to_margin)
+            #print('closest_to_margin:', closest_to_margin)
             reference_range = ref_traj.X[-1][1]
             downrange_difference = reference_range - target_range
-            print('downrange_difference', downrange_difference)
+            #print('downrange_difference', downrange_difference)
 
             if abs(downrange_difference) <= target_margin:
-                print('accepted bank angle profile in', iterations, 'iterations')
+                #print('accepted bank angle profile in', iterations, 'iterations')
                 searching = False
-                print('bank_angle_profile:', params['bank_1'], params['bank_2'], params['bank_3'])
+                #print('bank_angle_profile:', params['bank_1'], params['bank_2'], params['bank_3'])
                 return ref_traj, g_load, heatflux, params
 
             if iterations >= 300:
-                print('no accepted bank angle profile, returning best fit')
-                print('bank_angle_profile:', params['bank_1'], params['bank_2'], params['bank_3'])
+                #print('no accepted bank angle profile, returning best fit')
+                #print('bank_angle_profile:', params['bank_1'], params['bank_2'], params['bank_3'])
                 searching = False
 
 

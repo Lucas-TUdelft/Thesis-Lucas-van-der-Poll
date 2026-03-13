@@ -2029,7 +2029,7 @@ class ApolloGuidance:
 
     def __init__(self, ref_data: apollo_utils.ApolloReferenceData,
                  bodies: environment.SystemOfBodies,
-                 ground_station_list: list,
+                 deadband_values: list,
                  estimated_flight_time: float,
                  K: float = 1):
         self.ref_data = ref_data
@@ -2065,6 +2065,8 @@ class ApolloGuidance:
         self.angle_of_attack = np.deg2rad(20) # rad
         self.Earth_rate = 7.2921 * 10 ** (-5) # rad/s
         self.deadband = np.deg2rad(2.0)
+        self.c0 = deadband_values[0]
+        self.c1 = deadband_values[1]
 
         # Variables
         self.current_time = float("NaN")
@@ -2139,11 +2141,11 @@ class ApolloGuidance:
         '''
 
     @staticmethod
-    def from_file(filename: str, bodies: environment.SystemOfBodies, ground_station_list: list,
+    def from_file(filename: str, bodies: environment.SystemOfBodies, deadband_values: list,
                   estimated_flight_time: float, K: float = 1):
         """Loads reference data from a file and initializes a new guidance controller"""
         ref_data = apollo_utils.ApolloReferenceData.load(filename)
-        return ApolloGuidance(ref_data, bodies, ground_station_list, estimated_flight_time, K)
+        return ApolloGuidance(ref_data, bodies, deadband_values, estimated_flight_time, K)
 
     def getAerodynamicAngles(self, current_time: float):
         self.updateGuidance(current_time)
@@ -2196,7 +2198,7 @@ class ApolloGuidance:
 
                 # get entry interface values
                 if self.first_loop:
-                    print('h:', h, 'v:', v, 'gamma:', gamma, 't', current_time )
+                    #print('h:', h, 'v:', v, 'gamma:', gamma, 't', current_time )
                     self.h0 = h
                     self.v0 = v
                     self.gamma0 = gamma
@@ -2204,7 +2206,7 @@ class ApolloGuidance:
 
                     #'''
                     self.adjustment_angle = self.Earth_rate * (self.estimated_flight_time - self.t0)
-                    print('adjustment angle:', np.rad2deg(self.adjustment_angle))
+                    #print('adjustment angle:', np.rad2deg(self.adjustment_angle))
                     rotation_matrix = np.array([
                         [np.cos(self.adjustment_angle), -1 * np.sin(self.adjustment_angle), 0],
                         [np.sin(self.adjustment_angle), np.cos(self.adjustment_angle), 0],
@@ -2255,6 +2257,8 @@ class ApolloGuidance:
                 self.Target_heading = np.arctan2(x,y)
 
                 heading_error = self.current_heading - self.Target_heading
+                self.deadband = self.c0 + self.c1 * (v ** 2)
+                #self.deadband = np.deg2rad(2.0)
                 if heading_error >= self.deadband:
                     self.bank_sign = 1.0
                 elif heading_error <= self.deadband:

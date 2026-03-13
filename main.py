@@ -85,7 +85,7 @@ elif target_location == 'Azores':
     station_longitude = np.deg2rad(-25.6756) # rad
     estimated_flight_time = 730  # s
 
-ground_station_list = [station_altitude, station_latitude, station_longitude]
+ground_station_list = [np.deg2rad(2.0), np.deg2rad((8.0 / (7000 ** 2)))]
 
 # Define coordinate system
 global_frame_origin = 'Earth'
@@ -140,7 +140,7 @@ environment_setup.add_ground_station(bodies.get_body("Earth"), ground_station_se
 
 # capsule
 bodies.create_empty_body('Capsule')
-new_capsule_mass = 19057.8 # kg
+new_capsule_mass = 10648.25 # kg
 bodies.get_body('Capsule').set_constant_mass(new_capsule_mass)
 reference_area = 60.82 # m^2
 lookup_tables_path = os.path.join(os.getcwd(),"AerodynamicLookupTables")
