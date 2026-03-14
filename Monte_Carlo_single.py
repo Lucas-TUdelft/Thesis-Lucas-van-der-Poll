@@ -5,6 +5,7 @@
 # General imports
 import os
 import numpy as np
+import pickle
 
 import apollo_utils
 from plotting_functions import *
@@ -40,7 +41,13 @@ Deadband Value c0
 Deadband Value c1
 '''
 
-
+parameternames = ['Initial Velocity',
+                  'Initial Heading Angle',
+                  'Initial Flight Path Angle',
+                  'Guidance Gain',
+                  'Deadband Value c0',
+                  'Deadband Value c1']
+#
 variation_range_per_parameter = [['Cabo Verde', 'Natal', 'Canarias', 'Azores', 'Paris'],
                                  [-50.0,50.0],
                                  [-np.deg2rad(1.0), np.deg2rad(1.0)],
@@ -49,7 +56,7 @@ variation_range_per_parameter = [['Cabo Verde', 'Natal', 'Canarias', 'Azores', '
                                  [np.deg2rad(-1.5), np.deg2rad(3.0)],
                                  [-np.deg2rad((8.0 / (7000 ** 2))), np.deg2rad((8.0 / (7000 ** 2)))]]
 num_parameters = len(variation_range_per_parameter) - 1
-num_simulations = 2
+num_simulations = 200
 
 np.random.seed(42)
 
@@ -62,6 +69,8 @@ constraints = np.empty((len(variation_range_per_parameter[0]),num_parameters, nu
 ###########################################################################
 # PERFORM MONTE CARLO ANALYSIS ############################################
 ###########################################################################
+
+output_folder = 'SimulationOutput'
 
 # Load spice kernels
 spice_interface.load_standard_kernels()
@@ -162,7 +171,7 @@ for i in range(len(variation_range_per_parameter[0])):
                 #deadband_values = [np.deg2rad(2.0), np.deg2rad((8.0 / (7000 ** 2)))] # rad, rad/(m/s^2)
 
             # modify input parameters
-            default_inputs[k] = default_inputs[k] + variation[k]
+            default_inputs[j] = default_inputs[j] + variation[k]
 
             speed = default_inputs[0]
             heading_angle = default_inputs[1]
@@ -467,9 +476,8 @@ for i in range(len(variation_range_per_parameter[0])):
             # calculate delta-V
             #print(initial_cartesian_state_inertial_disconnect, initial_cartesian_state_inertial,
             #      initial_cartesian_state_inertial_disconnect - initial_cartesian_state_inertial)
-            initial_velocity_correction = (
-                                                      initial_cartesian_state_inertial_disconnect - initial_cartesian_state_inertial)[
-                                          3:6]
+            initial_velocity_correction = (initial_cartesian_state_inertial_disconnect -
+                                           initial_cartesian_state_inertial)[3:6]
             delta_V = np.linalg.norm(initial_velocity_correction)
             Isp = 360
             g0 = 9.807
@@ -482,15 +490,20 @@ for i in range(len(variation_range_per_parameter[0])):
             print('propellant mass for initial state correction:', mp, 'kg')
             '''
 
-            print(i,j,k)
-            inputs[i][j][k] = default_inputs[k]
-            objectives = [final_distance_to_target, mp]
-            constraints = [max_gload, max_heatflux, total_heatload, final_velocity, succesfull_completion]
+            inputs[i][j][k] = default_inputs[j]
+            objectives[i][j][k] = [final_distance_to_target, mp]
+            constraints[i][j][k] = [max_gload, max_heatflux, total_heatload, final_velocity, succesfull_completion]
 
 
 # constraint values
 max_total_heatload_constraint = 200e6 # J/m^2
 max_final_velocity_constraint = 900 # m/s
+
+data_path = os.path.join(output_folder, 'MC_single_data.dat')
+savedata = [inputs, objectives, constraints]
+with open(data_path,'wb') as f:
+    pickle.dump(savedata, f)
+
 
 # determine if constraints were exceeded, and plot, per target location
 for i in range(len(variation_range_per_parameter[0])):
@@ -506,20 +519,79 @@ for i in range(len(variation_range_per_parameter[0])):
             within_final_velocity = constraints[i][j][k][3] < max_final_velocity_constraint
             succesfull_completion = constraints[i][j][k][4]
 
-        if within_gload and within_heatflux and within_total_heatload and within_final_velocity and succesfull_completion:
-            input_value = inputs[i][j][k]
-            objective_value = objectives[i][j][k]
-            within_constraints_parameter.append([input_value, objective_value])
-        else:
-            input_value = inputs[i][j][k]
-            objective_value = objectives[i][j][k]
-            outside_constraints_parameter.append([input_value,objective_value])
-    within_constraints.append(within_constraints_parameter)
-    outside_constraints.append(outside_constraints_parameter)
+            if within_gload and within_heatflux and within_total_heatload and within_final_velocity and succesfull_completion:
+                input_value = inputs[i][j][k]
+                objective_value = objectives[i][j][k]
+                within_constraints_parameter.append([input_value, objective_value])
+            else:
+                input_value = inputs[i][j][k]
+                objective_value = objectives[i][j][k]
+                outside_constraints_parameter.append([input_value,objective_value])
+        within_constraints.append(within_constraints_parameter)
+        outside_constraints.append(outside_constraints_parameter)
 
+    for j in range(num_parameters):
+        input_within_constraints = [within_constraints[j][k][0] for k in range(len(within_constraints[j]))]
+        input_outside_constraints = [outside_constraints[j][k][0] for k in range(len(outside_constraints[j]))]
 
+        objective1_within_constraints = [within_constraints[j][k][1][0] for k in range(len(within_constraints[j]))]
+        objective2_within_constraints = [within_constraints[j][k][1][1] for k in range(len(within_constraints[j]))]
 
-print(inputs)
+        objective1_outside_constraints = [outside_constraints[j][k][1][0] for k in range(len(outside_constraints[j]))]
+        objective2_outside_constraints = [outside_constraints[j][k][1][1] for k in range(len(outside_constraints[j]))]
+
+        gload_plots = [constraints[i][j][k][0] for k in range(num_simulations)]
+        heat_flux_plots = [constraints[i][j][k][1] for k in range(num_simulations)]
+        heat_load_plots = [constraints[i][j][k][2] for k in range(num_simulations)]
+        final_velocity_plots = [constraints[i][j][k][3] for k in range(num_simulations)]
+
+        # 3 by 1 figure with 3 subplots
+        fig, axs = plt.subplots(2, 3, figsize=(10, 5))
+        axs = axs.flatten()
+        # objectives
+        fig.suptitle('Parameter ' + parameternames[j] + ' against objectives and constraints, for ' + variation_range_per_parameter[0][i])
+        axs[0].scatter(input_within_constraints, objective1_within_constraints, color='blue', label='Within constraints')
+        axs[0].scatter(input_outside_constraints, objective1_outside_constraints, color='red', label='Outside constraints')
+        axs[0].set_title('Final distance to target [m]')
+        axs[0].set_xlabel('Parameter ' + parameternames[j])
+        axs[0].set_ylabel('Final distance to target')
+        axs[0].legend()
+        axs[0].grid()
+        axs[1].scatter(input_within_constraints, objective2_within_constraints, color='blue', label='Within constraints')
+        axs[1].scatter(input_outside_constraints, objective2_outside_constraints, color='red', label='Outside constraints')
+        axs[1].set_title('Propellant mass [kg]')
+        axs[1].set_xlabel('Parameter ' + parameternames[j])
+        axs[1].set_ylabel('Propellant mass')
+        axs[1].legend()
+        axs[1].grid()
+
+        # constraints
+        axs[2].scatter(inputs[i][j], gload_plots)
+        axs[2].set_title('Max G-load [-]')
+        axs[2].set_xlabel('Parameter ' + parameternames[j])
+        axs[2].set_ylabel('Max G-load')
+        axs[2].grid()
+        axs[3].scatter(inputs[i][j], heat_flux_plots)
+        axs[3].set_title('Max heat flux [W/m^2]')
+        axs[3].set_xlabel('Parameter ' + parameternames[j])
+        axs[3].set_ylabel('Max heat flux')
+        axs[3].grid()
+        axs[4].scatter(inputs[i][j], heat_load_plots)
+        axs[4].set_title('Max heat load [J/m^2]')
+        axs[4].set_xlabel('Parameter ' + parameternames[j])
+        axs[4].set_ylabel('Max heat load')
+        axs[4].grid()
+        axs[5].scatter(inputs[i][j], final_velocity_plots)
+        axs[5].set_title('Final velocity [m/s]')
+        axs[5].set_xlabel('Parameter ' + parameternames[j])
+        axs[5].set_ylabel('Final velocity')
+        axs[5].grid()
+        plt.tight_layout()
+        figname = 'Parameter ' + parameternames[j] + ' MC single ' + variation_range_per_parameter[0][i] + '.png'
+        fig.savefig(os.path.join(output_folder, figname))
+        plt.show()
+
+#print(inputs)
 '''
 altitude_plot(h, dependent_variables_time)
 bank_plot(bank, dependent_variables_time)
