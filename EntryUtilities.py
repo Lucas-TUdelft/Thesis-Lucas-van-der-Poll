@@ -2078,7 +2078,10 @@ class ApolloGuidance:
         self.current_heading = 0.0 # rad
         self.current_latitude = 0.0 # rad
         self.current_longitude = 0.0 # rad
-        self.Target_heading = 0.0
+        self.Target_heading = 0.0 # rad
+        self.number_of_bank_reversals = 0 # -
+        self.bank_plus = False
+        self.bank_minus = False
 
         # Entry interface values
         self.h0 = 0.0
@@ -2261,8 +2264,16 @@ class ApolloGuidance:
                 #self.deadband = np.deg2rad(2.0)
                 if heading_error >= self.deadband:
                     self.bank_sign = 1.0
-                elif heading_error <= self.deadband:
+                    self.bank_plus = True
+                    if self.bank_minus:
+                        self.bank_minus = False
+                        self.number_of_bank_reversals = self.number_of_bank_reversals + 1
+                elif heading_error <= - self.deadband:
                     self.bank_sign = -1.0
+                    self.bank_minus = True
+                    if self.bank_plus:
+                        self.bank_plus = False
+                        self.number_of_bank_reversals = self.number_of_bank_reversals + 1
 
 
                 '''

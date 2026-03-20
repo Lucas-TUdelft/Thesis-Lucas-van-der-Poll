@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import numpy as np
+
 
 def maximum_error_plot(time_steps,max_errors):
     '''
@@ -348,6 +350,67 @@ def sensitivity_error_plot(uncertainties,max_errors):
     ax1.set_ylabel('average position error [m]')
     ax1.grid()
 
+    fig.tight_layout()
+    plt.show()
+
+    return
+
+def bank_comparison_plot(banks,times,labels):
+    ''' plot the bank angle over time of various propagators '''
+
+    fig = plt.figure(figsize=(8, 8))
+    ax1 = fig.add_subplot(111)
+
+    linestyles = ['-','-','--',':','--',':',':','--',':',':']
+
+    for i in range(len(banks)):
+        ax1.plot(times[i], banks[i], label = labels[i], linestyle = linestyles[i])
+
+    ax1.set_xlabel('Time [s]', size=16)
+    ax1.set_ylabel('bank angle [deg]', size=16)
+    ax1.grid(True, which='both', ls="-")
+    ax1.legend()
+    fig.tight_layout()
+    plt.show()
+
+    return
+
+def latlong_comparison_plot(lats, longs, lat_groundstation, long_groundstation, labels):
+    ''' plot the latitude-longitude over time of various propagators '''
+
+    fig = plt.figure(figsize=(8, 8))
+    ax1 = fig.add_subplot(111)
+
+    linestyles = ['-','-','--',':','--',':',':','--',':',':']
+
+    for i in range(len(lats)):
+        ax1.scatter(longs[i], lats[i],label = labels[i], s=1)
+
+    ax1.plot(long_groundstation, lat_groundstation, color='g', marker='*')
+    ax1.set_xlabel('latitude [deg]')
+    ax1.set_ylabel('longitude [deg]')
+    ax1.grid()
+    ax1.legend()
+    fig.tight_layout()
+    plt.show()
+
+    return
+
+def heatflux_comparison_plot(heatfluxs,times,labels):
+    ''' plot the aero-g load over time of various propagators '''
+
+    fig = plt.figure(figsize=(8, 8))
+    ax1 = fig.add_subplot(111)
+
+    linestyles = ['-','-','--',':','--',':',':','--',':',':']
+
+    for i in range(len(heatfluxs)):
+        ax1.plot(times[i], heatfluxs[i],label = labels[i], linestyle = linestyles[i])
+
+    ax1.set_xlabel('Time [s]', size=16)
+    ax1.set_ylabel('Heat flux [W/m^2]', size=16)
+    ax1.grid(True, which='both', ls="-")
+    ax1.legend()
     fig.tight_layout()
     plt.show()
 

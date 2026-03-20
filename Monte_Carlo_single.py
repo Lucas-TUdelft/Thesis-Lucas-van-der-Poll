@@ -47,16 +47,23 @@ parameternames = ['Initial Velocity',
                   'Guidance Gain',
                   'Deadband Value c0',
                   'Deadband Value c1']
-#
-variation_range_per_parameter = [['Cabo Verde', 'Natal', 'Canarias', 'Azores', 'Paris'],
+parameternames_axis = ['Initial Velocity [m/s]',
+                       'Initial Heading Angle [rad]',
+                       'Initial Flight Path Angle [rad]',
+                       'Guidance Gain [-]',
+                       'Deadband Value c0 [rad]',
+                       'Deadband Value c1 [rad/(m/s)^2]']
+#'Cabo Verde', 'Natal', 'Canarias', 'Azores', 'Paris'
+variation_range_per_parameter = [['Cabo Verde'],
                                  [-50.0,50.0],
                                  [-np.deg2rad(1.0), np.deg2rad(1.0)],
                                  [-np.deg2rad(0.2), np.deg2rad(0.2)],
                                  [0,10],
                                  [np.deg2rad(-1.5), np.deg2rad(3.0)],
                                  [-np.deg2rad((8.0 / (7000 ** 2))), np.deg2rad((8.0 / (7000 ** 2)))]]
+
 num_parameters = len(variation_range_per_parameter) - 1
-num_simulations = 200
+num_simulations = 5
 
 np.random.seed(42)
 
@@ -407,7 +414,7 @@ for i in range(len(variation_range_per_parameter[0])):
 
             # bank angle guidance
             aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
-                'apollo_data_vref.npz', bodies, deadband_values, estimated_flight_time, K=1)
+                'apollo_data_vref.npz', bodies, deadband_values, estimated_flight_time, K=guidance_K)
             bodies.get_body('Capsule').rotation_model.reset_aerodynamic_angle_function(
                 aerodynamic_guidance_object.getAerodynamicAngles)
 
@@ -484,6 +491,8 @@ for i in range(len(variation_range_per_parameter[0])):
             m0 = new_capsule_mass * np.exp(delta_V / (Isp * g0))
             mp = m0 - new_capsule_mass
 
+            n_bank_reversals = aerodynamic_guidance_object.number_of_bank_reversals
+
             '''
             print('optimisation objectives:')
             print('final distance to target:', final_distance_to_target / 1e3, 'km')
@@ -491,7 +500,7 @@ for i in range(len(variation_range_per_parameter[0])):
             '''
 
             inputs[i][j][k] = default_inputs[j]
-            objectives[i][j][k] = [final_distance_to_target, mp]
+            objectives[i][j][k] = [final_distance_to_target, mp, n_bank_reversals]
             constraints[i][j][k] = [max_gload, max_heatflux, total_heatload, final_velocity, succesfull_completion]
 
 
@@ -499,10 +508,10 @@ for i in range(len(variation_range_per_parameter[0])):
 max_total_heatload_constraint = 200e6 # J/m^2
 max_final_velocity_constraint = 900 # m/s
 
-data_path = os.path.join(output_folder, 'MC_single_data.dat')
-savedata = [inputs, objectives, constraints]
-with open(data_path,'wb') as f:
-    pickle.dump(savedata, f)
+#data_path = os.path.join(output_folder, ' MC single ' + variation_range_per_parameter[0][i] + '.dat')
+#savedata = [inputs, objectives, constraints]
+#with open(data_path,'wb') as f:
+#    pickle.dump(savedata, f)
 
 
 # determine if constraints were exceeded, and plot, per target location
@@ -536,9 +545,11 @@ for i in range(len(variation_range_per_parameter[0])):
 
         objective1_within_constraints = [within_constraints[j][k][1][0] for k in range(len(within_constraints[j]))]
         objective2_within_constraints = [within_constraints[j][k][1][1] for k in range(len(within_constraints[j]))]
+        objective3_within_constraints = [within_constraints[j][k][1][2] for k in range(len(within_constraints[j]))]
 
         objective1_outside_constraints = [outside_constraints[j][k][1][0] for k in range(len(outside_constraints[j]))]
         objective2_outside_constraints = [outside_constraints[j][k][1][1] for k in range(len(outside_constraints[j]))]
+        objective3_outside_constraints = [outside_constraints[j][k][1][2] for k in range(len(outside_constraints[j]))]
 
         gload_plots = [constraints[i][j][k][0] for k in range(num_simulations)]
         heat_flux_plots = [constraints[i][j][k][1] for k in range(num_simulations)]
@@ -546,49 +557,62 @@ for i in range(len(variation_range_per_parameter[0])):
         final_velocity_plots = [constraints[i][j][k][3] for k in range(num_simulations)]
 
         # 3 by 1 figure with 3 subplots
-        fig, axs = plt.subplots(2, 3, figsize=(10, 5))
+        fig, axs = plt.subplots(1, 3, figsize=(10, 5))
         axs = axs.flatten()
         # objectives
-        fig.suptitle('Parameter ' + parameternames[j] + ' against objectives and constraints, for ' + variation_range_per_parameter[0][i])
+        fig.suptitle('Parameter ' + parameternames[j] + ' against objectives, for ' + variation_range_per_parameter[0][i])
         axs[0].scatter(input_within_constraints, objective1_within_constraints, color='blue', label='Within constraints')
         axs[0].scatter(input_outside_constraints, objective1_outside_constraints, color='red', label='Outside constraints')
-        axs[0].set_title('Final distance to target [m]')
+        axs[0].set_title('Final distance to target')
         axs[0].set_xlabel('Parameter ' + parameternames[j])
-        axs[0].set_ylabel('Final distance to target')
+        axs[0].set_ylabel('Final distance to target [m]')
         axs[0].legend()
         axs[0].grid()
         axs[1].scatter(input_within_constraints, objective2_within_constraints, color='blue', label='Within constraints')
         axs[1].scatter(input_outside_constraints, objective2_outside_constraints, color='red', label='Outside constraints')
-        axs[1].set_title('Propellant mass [kg]')
+        axs[1].set_title('Propellant mass')
         axs[1].set_xlabel('Parameter ' + parameternames[j])
-        axs[1].set_ylabel('Propellant mass')
+        axs[1].set_ylabel('Propellant mass [kg]')
         axs[1].legend()
         axs[1].grid()
+        axs[2].scatter(input_within_constraints, objective3_within_constraints, color='blue', label='Within constraints')
+        axs[2].scatter(input_outside_constraints, objective3_outside_constraints, color='red', label='Outside constraints')
+        axs[2].set_title('Number of bank reversals')
+        axs[2].set_xlabel('Parameter ' + parameternames[j])
+        axs[2].set_ylabel('number of bank reversals [-]')
+        axs[2].legend()
+        axs[2].grid()
+        plt.tight_layout()
+        figname = 'Parameter ' + parameternames[j] + ' MC single objectives ' + variation_range_per_parameter[0][i] + '.png'
+        fig.savefig(os.path.join(output_folder, figname))
+        plt.show()
 
         # constraints
-        axs[2].scatter(inputs[i][j], gload_plots)
-        axs[2].set_title('Max G-load [-]')
+        fig, axs = plt.subplots(1, 4, figsize=(10, 5))
+        fig.suptitle('Parameter ' + parameternames[j] + ' against constraints, for ' + variation_range_per_parameter[0][i])
+        axs[0].scatter(inputs[i][j], gload_plots)
+        axs[0].set_title('Max G-load')
+        axs[0].set_xlabel('Parameter ' + parameternames[j])
+        axs[0].set_ylabel('Max G-load [-]')
+        axs[0].grid()
+        axs[1].scatter(inputs[i][j], heat_flux_plots)
+        axs[1].set_title('Max heat flux')
+        axs[1].set_xlabel('Parameter ' + parameternames[j])
+        axs[1].set_ylabel('Max heat flux [W/m^2]')
+        axs[1].grid()
+        axs[2].scatter(inputs[i][j], heat_load_plots)
+        axs[2].set_title('Max heat load')
         axs[2].set_xlabel('Parameter ' + parameternames[j])
-        axs[2].set_ylabel('Max G-load')
+        axs[2].set_ylabel('Max heat load [J/m^2]')
         axs[2].grid()
-        axs[3].scatter(inputs[i][j], heat_flux_plots)
-        axs[3].set_title('Max heat flux [W/m^2]')
+        axs[3].scatter(inputs[i][j], final_velocity_plots)
+        axs[3].set_title('Final velocity')
         axs[3].set_xlabel('Parameter ' + parameternames[j])
-        axs[3].set_ylabel('Max heat flux')
+        axs[3].set_ylabel('Final velocity [m/s]')
         axs[3].grid()
-        axs[4].scatter(inputs[i][j], heat_load_plots)
-        axs[4].set_title('Max heat load [J/m^2]')
-        axs[4].set_xlabel('Parameter ' + parameternames[j])
-        axs[4].set_ylabel('Max heat load')
-        axs[4].grid()
-        axs[5].scatter(inputs[i][j], final_velocity_plots)
-        axs[5].set_title('Final velocity [m/s]')
-        axs[5].set_xlabel('Parameter ' + parameternames[j])
-        axs[5].set_ylabel('Final velocity')
-        axs[5].grid()
         plt.tight_layout()
-        figname = 'Parameter ' + parameternames[j] + ' MC single ' + variation_range_per_parameter[0][i] + '.png'
-        fig.savefig(os.path.join(output_folder, figname))
+        figname = 'Parameter ' + parameternames[j] + ' MC single constraints ' + variation_range_per_parameter[0][i] + '.png'
+        #fig.savefig(os.path.join(output_folder, figname))
         plt.show()
 
 #print(inputs)

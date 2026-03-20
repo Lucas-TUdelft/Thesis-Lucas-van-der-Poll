@@ -48,7 +48,7 @@ termination_altitude = 30.0E3  # m
 bodies_to_create = ['Earth', 'Moon', 'Sun']
 
 # Define Ground station settings
-target_location = 'Paris'
+target_location = 'Cabo Verde'
 if target_location == 'Paris':
     speed = 7505
     heading_angle = np.deg2rad(35.0)
@@ -85,6 +85,7 @@ elif target_location == 'Azores':
     station_longitude = np.deg2rad(-25.6756) # rad
     estimated_flight_time = 730  # s
 
+speed = 6965
 ground_station_list = [np.deg2rad(2.0), np.deg2rad((8.0 / (7000 ** 2)))]
 
 # Define coordinate system
@@ -301,3 +302,17 @@ velocity_plot(vel, dependent_variables_time)
 gload_plot(g, dependent_variables_time)
 latlong_plot(latitude,longitude,np.rad2deg(station_latitude),np.rad2deg(station_longitude))
 
+Earth_radius = 6371 * 10 ** 3  # m
+final_vehicle_position_bodyfixed = bodies.get_body('Capsule').flight_conditions.body_centered_body_fixed_state[0:3]
+final_vehicle_position_bodyfixed_unit = final_vehicle_position_bodyfixed / np.linalg.norm(final_vehicle_position_bodyfixed)
+final_groudstation_position_bodyfixed = bodies.get_body("Earth").get_ground_station("LandingPad").\
+    station_state.get_cartesian_position(0.0)
+final_groudstation_position_bodyfixed_unit = final_groudstation_position_bodyfixed / np.linalg.norm(
+    final_groudstation_position_bodyfixed)
+dot_product = np.dot(final_vehicle_position_bodyfixed_unit, final_groudstation_position_bodyfixed_unit)
+dot_product = np.clip(dot_product, -1.0, 1.0)
+final_distance_to_target = Earth_radius * np.arccos(dot_product)
+print(final_distance_to_target)
+
+number_of_bank_reversals = aerodynamic_guidance_object.number_of_bank_reversals
+print(number_of_bank_reversals)
