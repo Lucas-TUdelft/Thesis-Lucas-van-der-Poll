@@ -57,7 +57,7 @@ parameternames_axis = ['Initial Velocity [m/s]',
 np.random.seed(42)
 
 #'Cabo Verde', 'Natal', 'Canarias', 'Azores', 'Paris'
-target_location = 'Cabo Verde'
+target_location = 'Paris'
 
 variation_range_per_parameter = [[-50.0,50.0],
                                  [-np.deg2rad(1.0), np.deg2rad(1.0)],
@@ -66,7 +66,7 @@ variation_range_per_parameter = [[-50.0,50.0],
                                  [np.deg2rad(-1.5), np.deg2rad(3.0)],
                                  [-np.deg2rad((8.0 / (7000 ** 2))), np.deg2rad((8.0 / (7000 ** 2)))]]
 
-num_simulations = 5
+num_simulations = 300
 num_parameters = 6
 
 # constraints

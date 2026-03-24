@@ -54,7 +54,7 @@ parameternames_axis = ['Initial Velocity [m/s]',
                        'Deadband Value c0 [rad]',
                        'Deadband Value c1 [rad/(m/s)^2]']
 #'Cabo Verde', 'Natal', 'Canarias', 'Azores', 'Paris'
-variation_range_per_parameter = [['Natal'],
+variation_range_per_parameter = [['Paris'],
                                  [-50.0,50.0],
                                  [-np.deg2rad(1.0), np.deg2rad(1.0)],
                                  [-np.deg2rad(0.2), np.deg2rad(0.2)],
