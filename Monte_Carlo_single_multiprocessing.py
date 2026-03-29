@@ -425,8 +425,10 @@ def run_simulation(location):
                     generate_reference_trajectory_file(h0, v0, gamma0, t0, bank_initial, s_target, target_margin, max_loads)
 
                     # bank angle guidance
+                    ref_file_path = os.path.join(script_dir, 'apollo_data_vref.npz')
+                    print(f"Worker for {location} looking for: {ref_file_path}")
                     aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
-                        os.path.join(script_dir,'apollo_data_vref.npz'), bodies, deadband_values, estimated_flight_time, K=guidance_K)
+                        ref_file_path, bodies, deadband_values, estimated_flight_time, K=guidance_K)
                     bodies.get_body('Capsule').rotation_model.reset_aerodynamic_angle_function(
                         aerodynamic_guidance_object.getAerodynamicAngles)
 
