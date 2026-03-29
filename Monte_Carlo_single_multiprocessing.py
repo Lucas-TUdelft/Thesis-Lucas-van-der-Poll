@@ -427,7 +427,7 @@ def run_simulation(location):
 
                     # bank angle guidance
                     aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
-                        ref_file_path, bodies, deadband_values, estimated_flight_time, K=guidance_K)
+                        os.path.join(script_dir,'apollo_data_vref.npz'), bodies, deadband_values, estimated_flight_time, K=guidance_K)
                     bodies.get_body('Capsule').rotation_model.reset_aerodynamic_angle_function(
                         aerodynamic_guidance_object.getAerodynamicAngles)
 
