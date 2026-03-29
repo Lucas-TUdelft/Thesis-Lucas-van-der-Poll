@@ -2043,8 +2043,8 @@ class ApolloGuidance:
 
         #self.rotation_matrix = spice_interface.compute_rotation_matrix_between_frames('IAU_EARTH', 'J2000', 327.0)
         self.ground_station = bodies.get_body("Earth").get_ground_station("LandingPad")
-        self.ground_station_latitude = self.ground_station.station_state.geodetic_positon_at_reference_epoch[1]
-        self.ground_station_longitude = self.ground_station.station_state.geodetic_positon_at_reference_epoch[2]
+        self.ground_station_latitude = self.ground_station.station_state.geodetic_position[1]
+        self.ground_station_longitude = self.ground_station.station_state.geodetic_position[2]
         self.Target_vector0 = self.ground_station.station_state.get_cartesian_position(0.0)  # m
         #self.Target_vector0 = np.dot(self.rotation_matrix,self.Target_vector0)
         self.Target_vector0_unit = self.Target_vector0 / np.linalg.norm(self.Target_vector0)

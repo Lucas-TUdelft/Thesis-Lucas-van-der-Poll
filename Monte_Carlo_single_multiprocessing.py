@@ -290,8 +290,6 @@ def run_simulation(location):
                     environment_setup.add_flight_conditions(bodies, 'Capsule', 'Earth')
 
                     # bank angle guidance
-                    ref_file_path = os.path.join(script_dir, 'apollo_data_vref.npz')
-                    print(f"Worker for {location} looking for: {ref_file_path}", flush=True)
                     aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
                         os.path.join(script_dir,'apollo_data_vref.npz'), bodies, deadband_values, estimated_flight_time, K=guidance_K)
                     rotation_model_settings = environment_setup.rotation_model.aerodynamic_angle_based(
@@ -622,7 +620,7 @@ def run_simulation(location):
                 figname = 'Parameter ' + parameternames[j] + ' MC single objectives ' + variation_range_per_parameter[0][
                     i] + '.png'
                 fig.savefig(os.path.join(output_folder, figname))
-                plt.show()
+                #plt.show()
 
                 # constraints
                 fig, axs = plt.subplots(1, 4, figsize=(10, 5))
@@ -664,7 +662,7 @@ def run_simulation(location):
                 figname = 'Parameter ' + parameternames[j] + ' MC single constraints ' + variation_range_per_parameter[0][
                     i] + '.png'
                 fig.savefig(os.path.join(output_folder, figname))
-                plt.show()
+                #plt.show()
 
         print(f"--- Finished Simulation with Parameter: {location} ---")
         return {"param": location, "status": "Success"}
