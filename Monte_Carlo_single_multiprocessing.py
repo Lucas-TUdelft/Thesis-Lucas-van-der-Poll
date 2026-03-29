@@ -98,7 +98,7 @@ def run_simulation(location):
                                               num_simulations)
 
                 for k in range(num_simulations):
-                    print('target location:', target_location, 'parameter index varied:', j, 'variation', k)
+                    #print('target location:', target_location, 'parameter index varied:', j, 'variation', k)
 
                     # get default input parameters
                     # InitialVelocity,
@@ -242,13 +242,13 @@ def run_simulation(location):
 
                     # keplerian ephemerides
                     body_settings.get('Earth').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
-                        'Earth', simulation_start_epoch, spice_interface.get_body_gravitational_parameter('Sun'),
+                        'Earth', simulation_start_epoch, spice.get_body_gravitational_parameter('Sun'),
                         frame_orientation='J2000')
                     body_settings.get('Moon').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
-                        'Moon', simulation_start_epoch, spice_interface.get_body_gravitational_parameter('Earth'),
+                        'Moon', simulation_start_epoch, spice.get_body_gravitational_parameter('Earth'),
                         frame_orientation='J2000')
                     body_settings.get('Sun').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
-                        'Sun', simulation_start_epoch, spice_interface.get_body_gravitational_parameter('Sun'),
+                        'Sun', simulation_start_epoch, spice.get_body_gravitational_parameter('Sun'),
                         frame_orientation='J2000')
 
                     # rotation model
@@ -350,7 +350,7 @@ def run_simulation(location):
                         central_bodies)
 
                     # initial state
-                    radial_distance = spice_interface.get_average_radius('Earth') + 157.7E3
+                    radial_distance = spice.get_average_radius('Earth') + 157.7E3
                     latitude = np.deg2rad(5.3)
                     longitude = np.deg2rad(-50.0)
                     # flight_path_angle = np.deg2rad(-0.8)
@@ -367,7 +367,7 @@ def run_simulation(location):
                         earth_rotational_model)
 
                     # pre-maneuver initial state
-                    radial_distance_disconnect = spice_interface.get_average_radius('Earth') + 157.7E3
+                    radial_distance_disconnect = spice.get_average_radius('Earth') + 157.7E3
                     latitude_disconnect = np.deg2rad(5.3)
                     longitude_disconnect = np.deg2rad(-50.0)
                     flight_path_angle_disconnect = np.deg2rad(-0.8)
