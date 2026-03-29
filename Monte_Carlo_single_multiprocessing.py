@@ -25,7 +25,7 @@ from tudatpy.kernel.math import interpolators
 from tudatpy.util import result2array
 
 # Problem-specific imports
-import EntryUtilities as Util
+import EntryUtilities_multiprocessing as Util
 
 def run_simulation(location):
 
