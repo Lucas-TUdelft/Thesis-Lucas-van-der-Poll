@@ -18,7 +18,7 @@ from tudatpy.numerical_simulation import propagation_setup
 from tudatpy.numerical_simulation import environment
 from tudatpy import numerical_simulation
 from tudatpy.astro import element_conversion
-import tudatpy.astro as astro
+from tudatpy.kernel.astro import reference_frames
 from tudatpy.math import interpolators
 from tudatpy.math import geometry
 
@@ -1999,9 +1999,9 @@ class STSAerodynamicGuidance:
             aerodynamic_reference_area = self.aerodynamic_coefficient_interface.reference_area
 
             # Get the heading, flight path, and latitude angles from the aerodynamic angle calculator
-            heading = self.aerodynamic_angle_calculator.get_angle(astro.reference_frames.AerodynamicsReferenceFrameAngles.heading_angle)
-            flight_path_angle = self.aerodynamic_angle_calculator.get_angle(astro.reference_frames.aerodynamic_coefficients.AerodynamicsReferenceFrameAngles.flight_path_angle)
-            latitude = self.aerodynamic_angle_calculator.get_angle(astro.reference_frames.AerodynamicsReferenceFrameAngles.latitude_angle)
+            heading = self.aerodynamic_angle_calculator.get_angle(reference_frames.AerodynamicsReferenceFrameAngles.heading_angle)
+            flight_path_angle = self.aerodynamic_angle_calculator.get_angle(reference_frames.aerodynamic_coefficients.AerodynamicsReferenceFrameAngles.flight_path_angle)
+            latitude = self.aerodynamic_angle_calculator.get_angle(reference_frames.AerodynamicsReferenceFrameAngles.latitude_angle)
 
             # Compute the acceleration caused by Lift
             lift_acceleration = 0.5 * density * airspeed ** 2 * aerodynamic_reference_area * current_force_coefficients[2] / body_mass
@@ -2198,7 +2198,7 @@ class ApolloGuidance:
                 dot_product = np.clip(dot_product, -1.0, 1.0)
                 s = self.Earth_radius * np.arccos(dot_product)
                 gamma = self.aerodynamic_angle_calculator.get_angle(
-                    astro.reference_frames.AerodynamicsReferenceFrameAngles.flight_path_angle)
+                    reference_frames.AerodynamicsReferenceFrameAngles.flight_path_angle)
 
                 # get entry interface values
                 if self.first_loop:
@@ -2247,11 +2247,11 @@ class ApolloGuidance:
 
                 # lateral guidance
                 self.current_heading = self.aerodynamic_angle_calculator.get_angle(
-                    astro.reference_frames.AerodynamicsReferenceFrameAngles.heading_angle)
+                    reference_frames.AerodynamicsReferenceFrameAngles.heading_angle)
                 self.current_latitude = self.aerodynamic_angle_calculator.get_angle(
-                    astro.reference_frames.AerodynamicsReferenceFrameAngles.latitude_angle)
+                    reference_frames.AerodynamicsReferenceFrameAngles.latitude_angle)
                 self.current_longitude = self.aerodynamic_angle_calculator.get_angle(
-                    astro.reference_frames.AerodynamicsReferenceFrameAngles.longitude_angle
+                    reference_frames.AerodynamicsReferenceFrameAngles.longitude_angle
                 )
 
                 delta_long = self.ground_station_longitude - self.current_longitude
