@@ -6,6 +6,7 @@
 import os
 import numpy as np
 import pickle
+import multiprocessing
 
 import apollo_utils
 from plotting_functions import *
