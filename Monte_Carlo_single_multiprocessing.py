@@ -291,7 +291,7 @@ def run_simulation(location):
 
                     # bank angle guidance
                     aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
-                        'apollo_data_vref.npz', bodies, deadband_values, estimated_flight_time, K=guidance_K)
+                        os.path.join(script_dir,'apollo_data_vref.npz'), bodies, deadband_values, estimated_flight_time, K=guidance_K)
                     rotation_model_settings = environment_setup.rotation_model.aerodynamic_angle_based(
                         'Earth', '', 'BodyFixed', aerodynamic_guidance_object.getAerodynamicAngles)
                     environment_setup.add_rotation_model(bodies, 'Capsule', rotation_model_settings)
@@ -426,7 +426,7 @@ def run_simulation(location):
 
                     # bank angle guidance
                     aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
-                        'apollo_data_vref.npz', bodies, deadband_values, estimated_flight_time, K=guidance_K)
+                        os.path.join(script_dir,'apollo_data_vref.npz'), bodies, deadband_values, estimated_flight_time, K=guidance_K)
                     bodies.get_body('Capsule').rotation_model.reset_aerodynamic_angle_function(
                         aerodynamic_guidance_object.getAerodynamicAngles)
 
