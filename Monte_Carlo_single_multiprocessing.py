@@ -15,7 +15,7 @@ from reference_trajectory_selection import *
 import tudatpy
 from tudatpy.data import save2txt
 from tudatpy.kernel import constants
-from tudatpy.kernel.interface import spice_interface
+from tudatpy.interface import spice
 from tudatpy.kernel.numerical_simulation import environment_setup
 from tudatpy.kernel.numerical_simulation import propagation_setup
 from tudatpy.kernel.numerical_simulation import environment
@@ -85,7 +85,7 @@ def run_simulation(location):
         output_folder = os.path.join(output_folder, output_subfolder)
 
         # Load spice kernels
-        spice_interface.load_standard_kernels()
+        spice.load_standard_kernels()
 
         for i in range(len(variation_range_per_parameter[0])):
             # print(variation_range_per_parameter[0][i])
