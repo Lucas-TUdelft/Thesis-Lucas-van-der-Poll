@@ -542,7 +542,7 @@ def generate_benchmarks(benchmark_step_size,
     '''
 
     # Recreate the guidance object
-    aerodynamic_guidance_object = ApolloGuidance.from_file('apollo_data_vref.npz', bodies, K=1)
+    aerodynamic_guidance_object = ApolloGuidance.from_file(os.path.join(os.path.dirname(os.path.abspath(__file__)),'apollo_data_vref.npz'), bodies, K=1)
     bodies.get_body('Capsule').rotation_model.reset_aerodynamic_angle_function(
         aerodynamic_guidance_object.getAerodynamicAngles)
 

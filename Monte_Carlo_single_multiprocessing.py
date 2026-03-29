@@ -290,10 +290,6 @@ def run_simulation(location):
                     environment_setup.add_flight_conditions(bodies, 'Capsule', 'Earth')
 
                     # bank angle guidance
-                    print('test')
-                    target_path = os.path.join(script_dir, 'apollo_data_vref.npz')
-                    print(f"DEBUG: Looking for file at: {target_path}")
-                    print(f"DEBUG: Does it exist? {os.path.exists(target_path)}")
                     aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
                         os.path.join(script_dir,'apollo_data_vref.npz'), bodies, deadband_values, estimated_flight_time, K=guidance_K)
                     rotation_model_settings = environment_setup.rotation_model.aerodynamic_angle_based(
