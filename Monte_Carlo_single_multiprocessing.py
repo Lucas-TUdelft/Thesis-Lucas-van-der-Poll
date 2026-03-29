@@ -22,7 +22,7 @@ from tudatpy.numerical_simulation import propagation_setup
 from tudatpy.numerical_simulation import environment
 from tudatpy import numerical_simulation
 from tudatpy.astro import element_conversion
-from tudatpy.astro import reference_frames
+#from tudatpy.astro import reference_frames
 from tudatpy.kernel.math import interpolators
 from tudatpy.util import result2array
 
