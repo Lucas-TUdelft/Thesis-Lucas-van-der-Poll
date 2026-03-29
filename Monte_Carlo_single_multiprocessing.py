@@ -269,16 +269,18 @@ def run_simulation(location):
                     # capsule
                     bodies.create_empty_body('Capsule')
                     new_capsule_mass = 10648.25  # kg
-                    bodies.get_body('Capsule').constant_mass = new_capsule_mass
+                    bodies.get_body('Capsule').mass = new_capsule_mass
                     reference_area = 60.82  # m^2
                     lookup_tables_path = os.path.join(os.getcwd(), "AerodynamicLookupTables")
                     aero_coefficients_files = {0: os.path.join(lookup_tables_path, "CD_table.txt"),
                                                2: os.path.join(lookup_tables_path, "CL_table.txt")}
 
+                    aerodynamics = environment_setup.aerodynamic_coefficients
+
                     aero_coefficient_settings = environment_setup.aerodynamic_coefficients.tabulated_force_only_from_files(
                         force_coefficient_files=aero_coefficients_files,
                         reference_area=reference_area,
-                        independent_variable_names=[environment.altitude_dependent, environment.mach_number_dependent]
+                        independent_variable_names=[aerodynamics.altitude_dependent, aerodynamics.mach_number_dependent]
                     )
 
                     environment_setup.add_aerodynamic_coefficient_interface(bodies, 'Capsule', aero_coefficient_settings)
