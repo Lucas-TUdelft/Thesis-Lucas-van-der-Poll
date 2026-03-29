@@ -25,8 +25,8 @@ from tudatpy.math import geometry
 # VEHICLE SHAPE/AERODYNAMICS UTILITIES ####################################
 ###########################################################################
 
-def get_capsule_coefficient_interface(capsule_shape: tudatpy.kernel.math.geometry.Capsule) \
-        -> tudatpy.kernel.numerical_simulation.environment.HypersonicLocalInclinationAnalysis:
+def get_capsule_coefficient_interface(capsule_shape: tudatpy.math.geometry.Capsule) \
+        -> tudatpy.numerical_simulation.environment.HypersonicLocalInclinationAnalysis:
     """
     Function that creates an aerodynamic database for a capsule, based on a set of shape parameters.
 
@@ -130,7 +130,7 @@ def get_capsule_coefficient_interface(capsule_shape: tudatpy.kernel.math.geometr
 
 
 def set_capsule_shape_parameters(shape_parameters: list,
-                                 bodies: tudatpy.kernel.numerical_simulation.environment.SystemOfBodies,
+                                 bodies: tudatpy.numerical_simulation.environment.SystemOfBodies,
                                  capsule_density: float):
     """
     It computes and creates the properties of the capsule (shape, mass, aerodynamic coefficient interface...).
@@ -173,7 +173,7 @@ def set_capsule_shape_parameters(shape_parameters: list,
     environment_setup.add_aerodynamic_coefficient_interface(bodies, 'Capsule', new_aerodynamic_coefficient_interface)
 
 
-def add_capsule_to_body_system(bodies: tudatpy.kernel.numerical_simulation.environment.SystemOfBodies,
+def add_capsule_to_body_system(bodies: tudatpy.numerical_simulation.environment.SystemOfBodies,
                                shape_parameters: list,
                                capsule_density: float):
     """
@@ -258,7 +258,7 @@ def add_capsule_settings_to_body_system(body_settings,
 ###########################################################################
 
 def get_initial_state(simulation_start_epoch: float,
-                      bodies: tudatpy.kernel.numerical_simulation.environment.SystemOfBodies) -> np.ndarray:
+                      bodies: tudatpy.numerical_simulation.environment.SystemOfBodies) -> np.ndarray:
     """
     Converts the initial state to inertial coordinates.
 
@@ -389,7 +389,7 @@ def get_propagator_settings(shape_parameters,
 def get_termination_settings(simulation_start_epoch: float,
                              maximum_duration: float,
                              termination_altitude: float) \
-        -> tudatpy.kernel.numerical_simulation.propagation_setup.propagator.PropagationTerminationSettings:
+        -> tudatpy.numerical_simulation.propagation_setup.propagator.PropagationTerminationSettings:
     """
     Get the termination settings for the simulation.
 
@@ -472,8 +472,8 @@ def get_dependent_variable_save_settings() -> list:
 
 def generate_benchmarks(benchmark_step_size,
                         simulation_start_epoch: float,
-                        bodies: tudatpy.kernel.numerical_simulation.environment.SystemOfBodies,
-                        benchmark_propagator_settings: tudatpy.kernel.numerical_simulation.propagation_setup.propagator.TranslationalStatePropagatorSettings,
+                        bodies: tudatpy.numerical_simulation.environment.SystemOfBodies,
+                        benchmark_propagator_settings: tudatpy.numerical_simulation.propagation_setup.propagator.TranslationalStatePropagatorSettings,
                         are_dependent_variables_present: bool,
                         output_path: str = None):
     """
