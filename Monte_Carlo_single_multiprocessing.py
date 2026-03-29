@@ -269,7 +269,7 @@ def run_simulation(location):
                     # capsule
                     bodies.create_empty_body('Capsule')
                     new_capsule_mass = 10648.25  # kg
-                    bodies.get_body('Capsule').constant_mass(new_capsule_mass)
+                    bodies.get_body('Capsule').constant_mass = new_capsule_mass
                     reference_area = 60.82  # m^2
                     lookup_tables_path = os.path.join(os.getcwd(), "AerodynamicLookupTables")
                     aero_coefficients_files = {0: os.path.join(lookup_tables_path, "CD_table.txt"),
