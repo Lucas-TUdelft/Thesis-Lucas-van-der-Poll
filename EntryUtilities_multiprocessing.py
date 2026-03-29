@@ -12,7 +12,7 @@ import apollo_utils
 import tudatpy
 from tudatpy.data import save2txt
 from tudatpy.kernel import constants
-from tudatpy.interface import spice_interface
+from tudatpy.interface import spice
 from tudatpy.numerical_simulation import environment_setup
 from tudatpy.numerical_simulation import propagation_setup
 from tudatpy.numerical_simulation import environment
@@ -280,7 +280,7 @@ def get_initial_state(simulation_start_epoch: float,
         The initial state of the vehicle expressed in inertial coordinates.
     """
     # Set initial spherical elements
-    radial_distance = spice_interface.get_average_radius('Earth') + 157.7E3
+    radial_distance = spice.get_average_radius('Earth') + 157.7E3
     latitude = np.deg2rad(5.3)
     longitude = np.deg2rad(-50.0)
     #speed = 6.93E3
