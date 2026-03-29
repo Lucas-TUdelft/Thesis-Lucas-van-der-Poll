@@ -290,6 +290,7 @@ def run_simulation(location):
                     environment_setup.add_flight_conditions(bodies, 'Capsule', 'Earth')
 
                     # bank angle guidance
+                    print('test')
                     target_path = os.path.join(script_dir, 'apollo_data_vref.npz')
                     print(f"DEBUG: Looking for file at: {target_path}")
                     print(f"DEBUG: Does it exist? {os.path.exists(target_path)}")
