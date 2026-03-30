@@ -448,7 +448,7 @@ def generate_reference_trajectory(h0, V0, gamma0_deg, t_entry, bank_initial, tar
     return ref_traj, g_load, heatflux, params
 
 
-def generate_reference_trajectory_file(h0, V0, gamma0_deg, t_entry, bank_initial, target_range, target_margin, max_loads, target_location):
+def generate_reference_trajectory_file(h0, V0, gamma0_deg, t_entry, bank_initial, target_range, target_margin, max_loads):
     '''
 
     :param h0:
@@ -492,10 +492,10 @@ def generate_reference_trajectory_file(h0, V0, gamma0_deg, t_entry, bank_initial
 
     # Test loading and saving of data
     apollo_ref = ApolloReferenceData(X_and_lam, ref_traj.u, ref_traj.t, params)
-    apollo_ref.save(target_location + '_apollo_data_vref.npz')
+    apollo_ref.save('apollo_data_vref.npz')
 
     # Load data back and check that it matches the original
-    ref = ApolloReferenceData.load(target_location + '_apollo_data_vref.npz')
+    ref = ApolloReferenceData.load('apollo_data_vref.npz')
     assert np.allclose(ref.data, apollo_ref.data)
 
     return
