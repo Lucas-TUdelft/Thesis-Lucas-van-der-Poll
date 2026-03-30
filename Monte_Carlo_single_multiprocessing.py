@@ -70,7 +70,7 @@ def run_simulation(location):
                                          [-np.deg2rad((8.0 / (7000 ** 2))), np.deg2rad((8.0 / (7000 ** 2)))]]
 
         num_parameters = len(variation_range_per_parameter) - 1
-        num_simulations = 250
+        num_simulations = 50
 
         np.random.seed(42)
 
