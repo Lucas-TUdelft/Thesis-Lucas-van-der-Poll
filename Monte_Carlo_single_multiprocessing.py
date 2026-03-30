@@ -70,7 +70,7 @@ def run_simulation(location):
                                          [-np.deg2rad((8.0 / (7000 ** 2))), np.deg2rad((8.0 / (7000 ** 2)))]]
 
         num_parameters = len(variation_range_per_parameter) - 1
-        num_simulations = 20
+        num_simulations = 250
 
         np.random.seed(42)
 
@@ -591,27 +591,27 @@ def run_simulation(location):
                 fig.suptitle(
                     'Parameter ' + parameternames[j] + ' against objectives, for ' + variation_range_per_parameter[0][i])
                 axs[0].scatter(input_within_constraints, objective1_within_constraints, color='blue',
-                               label='Within constraints')
+                               label='Within constraints', s=2)
                 axs[0].scatter(input_outside_constraints, objective1_outside_constraints, color='red',
-                               label='Outside constraints')
+                               label='Outside constraints', s=2)
                 axs[0].set_title('Final distance to target')
                 axs[0].set_xlabel('Parameter ' + parameternames_axis[j])
                 axs[0].set_ylabel('Final distance to target [m]')
                 axs[0].legend()
                 axs[0].grid()
                 axs[1].scatter(input_within_constraints, objective2_within_constraints, color='blue',
-                               label='Within constraints')
+                               label='Within constraints', s=2)
                 axs[1].scatter(input_outside_constraints, objective2_outside_constraints, color='red',
-                               label='Outside constraints')
+                               label='Outside constraints', s=2)
                 axs[1].set_title('Propellant mass')
                 axs[1].set_xlabel('Parameter ' + parameternames_axis[j])
                 axs[1].set_ylabel('Propellant mass [kg]')
                 axs[1].legend()
                 axs[1].grid()
                 axs[2].scatter(input_within_constraints, objective3_within_constraints, color='blue',
-                               label='Within constraints')
+                               label='Within constraints', s=2)
                 axs[2].scatter(input_outside_constraints, objective3_outside_constraints, color='red',
-                               label='Outside constraints')
+                               label='Outside constraints', s=2)
                 axs[2].set_title('Number of bank reversals')
                 axs[2].set_xlabel('Parameter ' + parameternames_axis[j])
                 axs[2].set_ylabel('number of bank reversals [-]')
@@ -628,33 +628,33 @@ def run_simulation(location):
                 fig.suptitle(
                     'Parameter ' + parameternames[j] + ' against constraints, for ' + variation_range_per_parameter[0][i])
                 axs[0].scatter(input_within_constraints, gload_plots_within_constraints, color='blue',
-                               label='Within constraints')
+                               label='Within constraints', s=2)
                 axs[0].scatter(input_outside_constraints, gload_plots_outside_constraints, color='red',
-                               label='Outside constraints')
+                               label='Outside constraints', s=2)
                 axs[0].set_title('Max G-load')
                 axs[0].set_xlabel('Parameter ' + parameternames_axis[j])
                 axs[0].set_ylabel('Max G-load [-]')
                 axs[0].grid()
                 axs[1].scatter(input_within_constraints, heatflux_plots_within_constraints, color='blue',
-                               label='Within constraints')
+                               label='Within constraints', s=2)
                 axs[1].scatter(input_outside_constraints, heatflux_plots_outside_constraints, color='red',
-                               label='Outside constraints')
+                               label='Outside constraints', s=2)
                 axs[1].set_title('Max heat flux')
                 axs[1].set_xlabel('Parameter ' + parameternames_axis[j])
                 axs[1].set_ylabel('Max heat flux [W/m^2]')
                 axs[1].grid()
                 axs[2].scatter(input_within_constraints, heatload_plots_within_constraints, color='blue',
-                               label='Within constraints')
+                               label='Within constraints', s=2)
                 axs[2].scatter(input_outside_constraints, heatload_plots_outside_constraints, color='red',
-                               label='Outside constraints')
+                               label='Outside constraints', s=2)
                 axs[2].set_title('Max heat load')
                 axs[2].set_xlabel('Parameter ' + parameternames_axis[j])
                 axs[2].set_ylabel('Max heat load [J/m^2]')
                 axs[2].grid()
                 axs[3].scatter(input_within_constraints, final_velocity_plots_within_constraints, color='blue',
-                               label='Within constraints')
+                               label='Within constraints', s=2)
                 axs[3].scatter(input_outside_constraints, final_velocity_plots_outside_constraints, color='red',
-                               label='Outside constraints')
+                               label='Outside constraints', s=2)
                 axs[3].set_title('Final velocity')
                 axs[3].set_xlabel('Parameter ' + parameternames_axis[j])
                 axs[3].set_ylabel('Final velocity [m/s]')
