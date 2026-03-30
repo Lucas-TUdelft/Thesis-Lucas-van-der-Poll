@@ -10,7 +10,7 @@ import multiprocessing
 
 import apollo_utils
 from plotting_functions import *
-from reference_trajectory_selection import *
+from reference_trajectory_selection_multiprocessing import *
 
 # Tudatpy imports
 import tudatpy
