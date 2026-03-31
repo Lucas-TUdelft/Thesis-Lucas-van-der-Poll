@@ -107,7 +107,7 @@ def run_simulation(location):
         current_dir = os.path.dirname(__file__)
 
         for i in range(num_simulations):
-            print('target location:', target_location, 'variation', i)
+            #print('target location:', target_location, 'variation', i)
 
             # get default input parameters
             # InitialVelocity,
@@ -417,7 +417,7 @@ def run_simulation(location):
             max_g_constraint = 10
             max_heatflux_constraint = 1.0 * 10 ** 6
             max_loads = [max_g_constraint, max_heatflux_constraint]
-            generate_reference_trajectory_file(h0, v0, gamma0, t0, bank_initial, s_target, target_margin, max_loads)
+            generate_reference_trajectory_file(h0, v0, gamma0, t0, bank_initial, s_target, target_margin, max_loads, target_location)
 
             # bank angle guidance
             aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
