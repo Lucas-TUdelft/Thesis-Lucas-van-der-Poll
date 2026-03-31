@@ -57,7 +57,7 @@ def run_simulation(location):
                                'Deadband Value c0 [rad]',
                                'Deadband Value c1 [rad/(m/s)^2]']
 
-        np.random.seed(42)
+        np.random.seed(22)
 
         # 'Cabo Verde', 'Natal', 'Canarias', 'Azores', 'Paris'
         target_location = location
