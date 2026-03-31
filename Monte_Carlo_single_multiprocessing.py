@@ -72,7 +72,7 @@ def run_simulation(location):
         num_parameters = len(variation_range_per_parameter) - 1
         num_simulations = 250
 
-        np.random.seed(42)
+        np.random.seed(22)
 
         inputs = np.empty((len(variation_range_per_parameter[0]), num_parameters, num_simulations), dtype=object)
         objectives = np.empty((len(variation_range_per_parameter[0]), num_parameters, num_simulations), dtype=object)
