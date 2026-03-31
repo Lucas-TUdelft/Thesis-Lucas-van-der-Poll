@@ -69,7 +69,7 @@ def run_simulation(location):
                                          [np.deg2rad(-1.5), np.deg2rad(3.0)],
                                          [-np.deg2rad((8.0 / (7000 ** 2))), np.deg2rad((8.0 / (7000 ** 2)))]]
 
-        num_simulations = 20
+        num_simulations = 500
         num_parameters = 6
 
         # constraints
