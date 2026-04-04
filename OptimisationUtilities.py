@@ -232,6 +232,7 @@ class optimization:
 
         # Set simulation start epoch
         self.simulation_start_epoch = 0.0  # s
+        print('test1')
         # Set termination conditions
         maximum_duration = constants.JULIAN_DAY  # s
         termination_altitude = 30.0E3  # m
@@ -273,7 +274,7 @@ class optimization:
         body_settings.get('Sun').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
             'Sun', self.simulation_start_epoch, spice.get_body_gravitational_parameter('Sun'),
             frame_orientation='J2000')
-
+        print('test2')
         # rotation model
         body_settings.get('Earth').rotation_model_settings = environment_setup.rotation_model.gcrs_to_itrs(
             base_frame='J2000')
@@ -302,6 +303,7 @@ class optimization:
         self.termination_settings = propagation_setup.propagator.hybrid_termination(termination_settings_list,
                                                                                       fulfill_single_condition=True)
 
+        print('test3')
         # create ground station
         if target_location == 'Paris':
             station_altitude = 35.0  # m
@@ -392,6 +394,8 @@ class optimization:
             propagation_setup.integrator.CoefficientSets.rkf_56)
         termination = self.termination_settings
         bodies = self.bodies
+
+        print('test4')
 
         problem_definition = ReentryProblem(self.simulation_start_epoch,
                                             termination,
