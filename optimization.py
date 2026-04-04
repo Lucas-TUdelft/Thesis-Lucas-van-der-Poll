@@ -44,6 +44,8 @@ def run_optimization(location):
         num_pops = 10
         seeds = [42, 22]
 
+        target_location = location
+
         if target_location == 'Paris':
             default_inputs = [7505,
                               np.deg2rad(35.0),
