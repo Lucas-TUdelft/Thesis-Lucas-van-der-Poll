@@ -135,8 +135,8 @@ def run_optimization(location):
         output_to_store = []
 
         for i in range(num_repeats):
-            x = output[i].get_x
-            y = output[i].get_f
+            x = output[i].get_x()
+            y = output[i].get_f()
             y_per_gen = output_per_generation[i]
 
             output_to_store.append([x,y,y_per_gen])
@@ -146,6 +146,7 @@ def run_optimization(location):
         output_folder = os.path.join(output_folder, output_subfolder)
 
         filename = location + '.dat'
+        filename = os.path.join(output_folder, filename)
         file = open(filename, 'wb')
         pickle.dump(output_to_store, file)
 
