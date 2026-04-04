@@ -168,6 +168,6 @@ if __name__ == "__main__":
 
     with multiprocessing.Pool(processes=num_cores) as pool:
 
-        results = pool.map(run_simulation, location_parameters)
+        results = pool.map(run_optimization, location_parameters)
 
     print("\nAll simulations complete!")
