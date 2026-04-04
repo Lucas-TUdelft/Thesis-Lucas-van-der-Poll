@@ -28,7 +28,7 @@ import pygmo as pg
 import EntryUtilities_multiprocessing as Util
 import OptimisationUtilities as OptUtil
 
-spice.load_standard_kernels()
+
 
 def run_optimization(location):
 
@@ -37,6 +37,8 @@ def run_optimization(location):
 
         # optimizer names are ihs, nsga2, moead, moead_gen, maco, nspso
         # seeds needs to be equal size to num_repeats
+
+        spice.load_standard_kernels()
 
         optimizer_name = 'ihs'
         num_repeats = 2
