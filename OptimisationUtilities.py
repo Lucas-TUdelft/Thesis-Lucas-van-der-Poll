@@ -265,13 +265,13 @@ class optimization:
 
         # keplerian ephemerides
         body_settings.get('Earth').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
-            'Earth', simulation_start_epoch, spice.get_body_gravitational_parameter('Sun'),
+            'Earth', self.simulation_start_epoch, spice.get_body_gravitational_parameter('Sun'),
             frame_orientation='J2000')
         body_settings.get('Moon').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
-            'Moon', simulation_start_epoch, spice.get_body_gravitational_parameter('Earth'),
+            'Moon', self.simulation_start_epoch, spice.get_body_gravitational_parameter('Earth'),
             frame_orientation='J2000')
         body_settings.get('Sun').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
-            'Sun', simulation_start_epoch, spice.get_body_gravitational_parameter('Sun'),
+            'Sun', self.simulation_start_epoch, spice.get_body_gravitational_parameter('Sun'),
             frame_orientation='J2000')
 
         # rotation model
@@ -285,7 +285,7 @@ class optimization:
         # termination settings
         # Time
         time_termination_settings = propagation_setup.propagator.time_termination(
-            simulation_start_epoch + maximum_duration,
+            self.simulation_start_epoch + maximum_duration,
             terminate_exactly_on_final_condition=False
         )
         # Altitude
