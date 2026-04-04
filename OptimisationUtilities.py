@@ -34,17 +34,17 @@ spice.load_standard_kernels()
 ###########################################################################
 
 class ReentryProblem:
+    bodies = None
+    termination_settings = None
     def __init__(self,
                  simulation_start_epoch,
-                 termination_settings,
-                 bodies,
                  bounds,
                  dependent_variables_to_save,
                  target_location):
 
         self.simulation_start_epoch = simulation_start_epoch
-        self.termination_settings = termination_settings
-        self.bodies = bodies
+        #self.termination_settings = termination_settings
+        #self.bodies = bodies
         self.bounds = bounds
         self.constraints = [10.0, 1.0 * 10 ** 6, 200e6, 600, 5000]
         self.dependent_variables_to_save = dependent_variables_to_save
@@ -397,11 +397,12 @@ class optimization:
         bodies = self.bodies
 
         problem_definition = ReentryProblem(self.simulation_start_epoch,
-                                            termination,
-                                            bodies,
                                             self.bounds,
                                             self.dependent_variables_to_save,
                                             self.target_location)
+
+        ReentryProblem.bodies = bodies
+        ReentryProblem.termination_settings = termination
 
         problem = pg.problem(problem_definition)
 
