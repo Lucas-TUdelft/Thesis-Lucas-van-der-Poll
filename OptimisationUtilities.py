@@ -73,6 +73,7 @@ class ReentryProblem:
         bodies = self.bodies
         termination_settings = self.termination_settings
         dependent_variables_to_save = self.dependent_variables_to_save
+        simulation_start_epoch = self.simulation_start_epoch
 
         # initial state
         radial_distance = spice.get_average_radius('Earth') + 157.7E3
