@@ -188,6 +188,7 @@ class ReentryProblem:
                                            self.target_location)
 
         # bank angle guidance
+        print('second bank angle guidance')
         aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
             os.path.join(script_dir, self.target_location + '_apollo_data_vref.npz'), bodies, deadband_values,
             estimated_flight_time, K=guidance_K)
