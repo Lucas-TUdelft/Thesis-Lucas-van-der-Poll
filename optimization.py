@@ -28,7 +28,8 @@ import pygmo as pg
 import EntryUtilities_multiprocessing as Util
 import OptimisationUtilities as OptUtil
 
-
+def init_worker():
+    spice.load_standard_kernels()
 
 def run_optimization(location):
 
@@ -162,7 +163,6 @@ def run_optimization(location):
 
 if __name__ == "__main__":
 
-    spice.load_standard_kernels()
     # Define your 5 different parameter sets
     location_parameters = ['Cabo Verde', 'Natal', 'Canarias', 'Azores', 'Paris']
 
@@ -171,7 +171,9 @@ if __name__ == "__main__":
 
     print(f"Launching {num_cores} simulations in parallel...")
 
-    with multiprocessing.Pool(processes=num_cores) as pool:
+    ctx = multiprocessing.get_context("spawn")
+
+    with ctx.Pool(processes=num_cores, initializer=init_worker) as pool:
 
         results = pool.map(run_optimization, location_parameters)
 
