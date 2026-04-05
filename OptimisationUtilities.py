@@ -253,8 +253,8 @@ class ReentryProblem:
         delta_V = np.linalg.norm(initial_velocity_correction)
         Isp = 360
         g0 = 9.807
-        m0 = new_capsule_mass * np.exp(delta_V / (Isp * g0))
-        mp = m0 - new_capsule_mass
+        m0 = bodies.get_body('Capsule').mass * np.exp(delta_V / (Isp * g0))
+        mp = m0 - bodies.get_body('Capsule').mass
 
         n_bank_reversals = aerodynamic_guidance_object.number_of_bank_reversals
 
