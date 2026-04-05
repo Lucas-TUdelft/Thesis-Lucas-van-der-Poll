@@ -49,6 +49,7 @@ class ReentryProblem:
         self.constraints = [10.0, 1.0 * 10 ** 6, 200e6, 600, 5000]
         #self.dependent_variables_to_save = dependent_variables_to_save
         self.target_location = target_location
+        self.initialised = False
 
     def get_bounds(self):
         return self.bounds
@@ -158,13 +159,19 @@ class ReentryProblem:
             estimated_flight_time = 750  # s
 
         # bank angle guidance
-        print('first bank angle guidance ' + self.target_location)
-        aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
-            os.path.join(script_dir, self.target_location + '_apollo_data_vref.npz'), bodies, deadband_values,
-            estimated_flight_time, K=guidance_K)
-        rotation_model_settings = environment_setup.rotation_model.aerodynamic_angle_based(
-            'Earth', '', 'BodyFixed', aerodynamic_guidance_object.getAerodynamicAngles)
-        environment_setup.add_rotation_model(bodies, 'Capsule', rotation_model_settings)
+        if not self.initialised:
+            aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
+                os.path.join(script_dir, self.target_location + '_apollo_data_vref.npz'), bodies, deadband_values,
+                estimated_flight_time, K=guidance_K)
+            rotation_model_settings = environment_setup.rotation_model.aerodynamic_angle_based(
+                'Earth', '', 'BodyFixed', aerodynamic_guidance_object.getAerodynamicAngles)
+            environment_setup.add_rotation_model(bodies, 'Capsule', rotation_model_settings)
+        else:
+            aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
+                os.path.join(script_dir, self.target_location + '_apollo_data_vref.npz'), bodies, deadband_values,
+                estimated_flight_time, K=guidance_K)
+            bodies.get_body('Capsule').rotation_model.reset_aerodynamic_angle_function(
+                aerodynamic_guidance_object.getAerodynamicAngles)
 
         # generate guidance entry conditions
         dynamics_simulator = numerical_simulation.create_dynamics_simulator(
@@ -189,7 +196,6 @@ class ReentryProblem:
                                            self.target_location)
 
         # bank angle guidance
-        print('second bank angle guidance '+ self.target_location)
         aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
             os.path.join(script_dir, self.target_location + '_apollo_data_vref.npz'), bodies, deadband_values,
             estimated_flight_time, K=guidance_K)
