@@ -146,6 +146,17 @@ class ReentryProblem:
 
         script_dir = os.path.dirname(os.path.abspath(__file__))
 
+        if self.target_location == 'Paris':
+            estimated_flight_time = 1050  # s
+        elif self.target_location == 'Cabo Verde':
+            estimated_flight_time = 575  # s
+        elif self.target_location == 'Natal':
+            estimated_flight_time = 420  # s
+        elif self.target_location == 'Canarias':
+            estimated_flight_time = 755  # s
+        elif self.target_location == 'Azores':
+            estimated_flight_time = 750  # s
+
         # bank angle guidance
         aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
             os.path.join(script_dir, self.target_location + '_apollo_data_vref.npz'), bodies, deadband_values,
