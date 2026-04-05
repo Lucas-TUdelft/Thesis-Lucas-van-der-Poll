@@ -163,6 +163,8 @@ def run_optimization(location):
 
 
 if __name__ == "__main__":
+
+    spice.load_standard_kernels()
     # Define your 5 different parameter sets
     location_parameters = ['Cabo Verde', 'Natal', 'Canarias', 'Azores', 'Paris']
 

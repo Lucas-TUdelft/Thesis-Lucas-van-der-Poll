@@ -72,6 +72,10 @@ class ReentryProblem:
 
         deadband_values = [deadband_c0, deadband_c1]
 
+        bodies = self.bodies
+        termination_settings = self.termination_settings
+        dependent_variables_to_save = self.dependent_variables_to_save
+
         # initial state
         radial_distance = spice.get_average_radius('Earth') + 157.7E3
         latitude = np.deg2rad(5.3)
