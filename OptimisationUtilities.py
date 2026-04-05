@@ -27,8 +27,6 @@ import pygmo as pg
 # Problem-specific imports
 import EntryUtilities_multiprocessing as Util
 
-spice.load_standard_kernels()
-
 ###########################################################################
 # DEFINE PROBLEM ##########################################################
 ###########################################################################
