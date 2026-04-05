@@ -144,6 +144,8 @@ class ReentryProblem:
             step_size,
             propagation_setup.integrator.CoefficientSets.rkf_56)
 
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+
         # bank angle guidance
         aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
             os.path.join(script_dir, target_location + '_apollo_data_vref.npz'), bodies, deadband_values,
