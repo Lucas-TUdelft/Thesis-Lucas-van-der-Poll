@@ -199,6 +199,22 @@ class ReentryProblem:
             bodies,
             propagator_settings)
 
+        state_history = dynamics_simulator.state_history
+        dependent_variables = dynamics_simulator.dependent_variable_history
+
+        state_history_array = result2array(state_history)
+        dependent_variables_array = result2array(dependent_variables)
+
+        dependent_variables_time = dependent_variables_array[:, 0]
+        h = dependent_variables_array[:, 2]
+        velocity_vector = dependent_variables_array[:, 13:16]
+        latitude = np.rad2deg(dependent_variables_array[:, 16])
+        longitude = np.rad2deg(dependent_variables_array[:, 17])
+        bank = np.rad2deg(dependent_variables_array[:, 18])
+        vel = dependent_variables_array[:, 19]
+        g = dependent_variables_array[:, 3]
+        rho = dependent_variables_array[:, 20]
+
         # optimisation constraints: max g-load, max heatflux, total heatload, final velocity
         max_gload = max(g)
         v_3 = vel ** 3
