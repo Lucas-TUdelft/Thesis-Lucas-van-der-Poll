@@ -114,6 +114,21 @@ class ReentryProblem:
         bodies_to_propagate = ['Capsule']
         central_bodies = ['Earth']
 
+        # Define accelerations acting on capsule
+        acceleration_settings_on_vehicle = {
+            'Earth': [propagation_setup.acceleration.spherical_harmonic_gravity(6, 6),
+                      propagation_setup.acceleration.aerodynamic()],
+            'Moon': [propagation_setup.acceleration.point_mass_gravity()],
+            'Sun': [propagation_setup.acceleration.point_mass_gravity()]
+        }
+        # Create acceleration models.
+        acceleration_settings = {'Capsule': acceleration_settings_on_vehicle}
+        acceleration_models = propagation_setup.create_acceleration_models(
+            bodies,
+            acceleration_settings,
+            bodies_to_propagate,
+            central_bodies)
+
         propagator_settings = propagation_setup.propagator.translational(central_bodies,
                                                                          acceleration_models,
                                                                          bodies_to_propagate,
