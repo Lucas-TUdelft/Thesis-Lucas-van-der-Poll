@@ -66,7 +66,7 @@ class ReentryProblem:
         deadband_values = [deadband_c0, deadband_c1]
 
         # Set simulation start epoch
-        self.simulation_start_epoch = 0.0  # s
+        simulation_start_epoch = 0.0  # s
 
         # Set termination conditions
         maximum_duration = constants.JULIAN_DAY  # s
@@ -101,13 +101,13 @@ class ReentryProblem:
 
         # keplerian ephemerides
         body_settings.get('Earth').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
-            'Earth', self.simulation_start_epoch, spice.get_body_gravitational_parameter('Sun'),
+            'Earth', simulation_start_epoch, spice.get_body_gravitational_parameter('Sun'),
             frame_orientation='J2000')
         body_settings.get('Moon').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
-            'Moon', self.simulation_start_epoch, spice.get_body_gravitational_parameter('Earth'),
+            'Moon', simulation_start_epoch, spice.get_body_gravitational_parameter('Earth'),
             frame_orientation='J2000')
         body_settings.get('Sun').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
-            'Sun', self.simulation_start_epoch, spice.get_body_gravitational_parameter('Sun'),
+            'Sun', simulation_start_epoch, spice.get_body_gravitational_parameter('Sun'),
             frame_orientation='J2000')
 
         # rotation model
@@ -121,7 +121,7 @@ class ReentryProblem:
         # termination settings
         # Time
         time_termination_settings = propagation_setup.propagator.time_termination(
-            self.simulation_start_epoch + maximum_duration,
+            simulation_start_epoch + maximum_duration,
             terminate_exactly_on_final_condition=False
         )
         # Altitude
@@ -135,7 +135,7 @@ class ReentryProblem:
         termination_settings_list = [time_termination_settings,
                                      lower_altitude_termination_settings]
         # Create termination settings object (when either the time of altitude condition is reached: propaation terminates)
-        self.termination_settings = propagation_setup.propagator.hybrid_termination(termination_settings_list,
+        termination_settings = propagation_setup.propagator.hybrid_termination(termination_settings_list,
                                                                                     fulfill_single_condition=True)
 
         # create ground station
@@ -192,10 +192,8 @@ class ReentryProblem:
 
         environment_setup.add_aerodynamic_coefficient_interface(bodies, 'Capsule', aero_coefficient_settings)
 
-        self.bodies = bodies
-
         # dependent variables
-        self.dependent_variables_to_save = [propagation_setup.dependent_variable.mach_number('Capsule', 'Earth'),
+        dependent_variables_to_save = [propagation_setup.dependent_variable.mach_number('Capsule', 'Earth'),
                                             propagation_setup.dependent_variable.altitude('Capsule', 'Earth'),
                                             propagation_setup.dependent_variable.local_aerodynamic_g_load('Capsule',
                                                                                                           'Earth'),
@@ -213,8 +211,6 @@ class ReentryProblem:
 
         #bodies = self.bodies
         #termination_settings = self.termination_settings
-        dependent_variables_to_save = self.dependent_variables_to_save
-        simulation_start_epoch = self.simulation_start_epoch
 
         # initial state
         radial_distance = spice.get_average_radius('Earth') + 157.7E3
@@ -274,9 +270,9 @@ class ReentryProblem:
                                                                          acceleration_models,
                                                                          bodies_to_propagate,
                                                                          initial_cartesian_state_inertial,
-                                                                         self.simulation_start_epoch,
+                                                                         simulation_start_epoch,
                                                                          None,
-                                                                         self.termination_settings,
+                                                                         termination_settings,
                                                                          propagation_setup.propagator.cowell,
                                                                          output_variables=dependent_variables_to_save)
 
