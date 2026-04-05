@@ -139,27 +139,27 @@ class ReentryProblem:
                                                                                     fulfill_single_condition=True)
 
         # create ground station
-        if target_location == 'Paris':
+        if self.target_location == 'Paris':
             station_altitude = 35.0  # m
             station_latitude = np.deg2rad(48.8575)  # rad
             station_longitude = np.deg2rad(2.3514)  # rad
             estimated_flight_time = 1050  # s
-        elif target_location == 'Cabo Verde':
+        elif self.target_location == 'Cabo Verde':
             station_altitude = 37.0  # m
             station_latitude = np.deg2rad(14.9198)  # rad
             station_longitude = np.deg2rad(-23.5073)  # rad
             estimated_flight_time = 575  # s
-        elif target_location == 'Natal':
+        elif self.target_location == 'Natal':
             station_altitude = 30.0  # m
             station_latitude = np.deg2rad(-5.7842)  # rad
             station_longitude = np.deg2rad(-35.2000)  # rad
             estimated_flight_time = 420  # s
-        elif target_location == 'Canarias':
+        elif self.target_location == 'Canarias':
             station_altitude = 0.0  # m
             station_latitude = np.deg2rad(28.2916)  # rad
             station_longitude = np.deg2rad(-16.6291)  # rad
             estimated_flight_time = 755  # s
-        elif target_location == 'Azores':
+        elif self.target_location == 'Azores':
             station_altitude = 0.0  # m
             station_latitude = np.deg2rad(37.7412)  # rad
             station_longitude = np.deg2rad(-25.6756)  # rad
