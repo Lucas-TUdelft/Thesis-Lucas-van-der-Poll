@@ -42,7 +42,7 @@ def run_optimization(location):
         optimizer_name = 'nsga2'
         num_repeats = 2
         num_generations = 5
-        num_pops = 10
+        num_pops = 12
         seeds = [42, 22]
 
         target_location = location
