@@ -36,10 +36,10 @@ def run_optimization(location):
     try:
         print(f"--- Starting Optimization with Parameter: {location} ---")
 
-        # optimizer names are ihs, nsga2, moead, moead_gen, maco, nspso
+        # optimizer names are ihs, nsga2 (multiple of 4), moead, moead_gen, maco, nspso
         # seeds needs to be equal size to num_repeats
 
-        optimizer_name = 'nsga2'
+        optimizer_name = 'moead'
         num_repeats = 2
         num_generations = 5
         num_pops = 12
