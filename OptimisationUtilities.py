@@ -452,6 +452,7 @@ class optimization:
             results_this_repeat = []
 
             for j in range(numgens):
+                print(f"{self.target_location} Seed: {seeds[i]} | Gen: {j+1}/{numgens}", flush=True)
                 pop = algo.evolve(pop)
                 results_this_repeat.append(pop.get_f())
             self.results_per_generation.append(results_this_repeat)
