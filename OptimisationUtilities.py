@@ -453,7 +453,7 @@ class optimization:
 
             for j in range(numgens):
                 pop = algo.evolve(pop)
-                results_this_repeat.append(results_this_repeat)
+                results_this_repeat.append(pop.get_f())
             self.results_per_generation.append(results_this_repeat)
 
             self.results.append(results_this_repeat)
