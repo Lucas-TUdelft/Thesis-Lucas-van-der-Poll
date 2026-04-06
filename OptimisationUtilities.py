@@ -456,5 +456,5 @@ class optimization:
                 results_this_repeat.append(pop.get_f())
             self.results_per_generation.append(results_this_repeat)
 
-            self.results.append(results_this_repeat)
+            self.results.append(pop)
         return None
