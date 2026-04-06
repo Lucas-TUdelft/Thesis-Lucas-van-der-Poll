@@ -42,7 +42,7 @@ def run_optimization(location):
         optimizer_name = 'moead'
         num_repeats = 2
         num_generations = 5
-        num_pops = 20
+        num_pops = 25
         seeds = [42, 22]
 
         target_location = location
