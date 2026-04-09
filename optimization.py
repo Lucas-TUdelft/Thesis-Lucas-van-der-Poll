@@ -38,9 +38,9 @@ def run_optimization(location):
 
         # optimizer names are ihs, nsga2 (multiple of 4), moead, moead_gen, maco, nspso
         # seeds needs to be equal size to num_repeats
-        # did: nsga2, maco, moead, moead_gen
+        # did: nsga2, maco, moead, moead_gen, ihs, nspso
 
-        optimizer_name = 'moead_gen'
+        optimizer_name = 'nspso'
         num_repeats = 2
         num_generations = 15
         num_pops = 40
