@@ -40,7 +40,7 @@ def run_optimization(location):
         # seeds needs to be equal size to num_repeats
         # did: nsga2, maco
 
-        optimizer_name = 'maco'
+        optimizer_name = 'ihs'
         num_repeats = 2
         num_generations = 15
         num_pops = 40
