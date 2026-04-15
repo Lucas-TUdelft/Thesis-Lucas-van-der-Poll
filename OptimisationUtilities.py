@@ -13,10 +13,10 @@ import tudatpy
 from tudatpy.data import save2txt
 from tudatpy import constants
 from tudatpy.interface import spice
-from tudatpy.numerical_simulation import environment_setup
-from tudatpy.numerical_simulation import propagation_setup
-from tudatpy.numerical_simulation import environment
-from tudatpy import numerical_simulation
+from tudatpy.dynamics import environment_setup
+from tudatpy.dynamics import propagation_setup
+from tudatpy.dynamics import environment
+from tudatpy.dynamics import numerical_simulation
 from tudatpy.astro import element_conversion
 #from tudatpy.astro import reference_frames
 from tudatpy.kernel.math import interpolators
