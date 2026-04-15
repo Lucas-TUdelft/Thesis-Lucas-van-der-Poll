@@ -16,7 +16,7 @@ from tudatpy.interface import spice
 from tudatpy.dynamics import environment_setup
 from tudatpy.dynamics import propagation_setup
 from tudatpy.dynamics import environment
-from tudatpy import dynamics.simulator
+from tudatpy.dynamics import numerical_simulation
 from tudatpy.astro import element_conversion
 #from tudatpy.astro import reference_frames
 from tudatpy.kernel.math import interpolators
