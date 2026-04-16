@@ -44,6 +44,8 @@ class ReentryProblem:
         self.constraints = [10.0, 1.0 * 10 ** 6, 200e6, 600, 5000]
         #self.dependent_variables_to_save = dependent_variables_to_save
         self.target_location = target_location
+        # Set simulation start epoch
+        self.simulation_start_epoch = 0.0  # s
 
         # Set termination conditions
         maximum_duration = constants.JULIAN_DAY  # s
@@ -78,13 +80,13 @@ class ReentryProblem:
 
         # keplerian ephemerides
         body_settings.get('Earth').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
-            'Earth', simulation_start_epoch, spice.get_body_gravitational_parameter('Sun'),
+            'Earth', self.simulation_start_epoch, spice.get_body_gravitational_parameter('Sun'),
             frame_orientation='J2000')
         body_settings.get('Moon').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
-            'Moon', simulation_start_epoch, spice.get_body_gravitational_parameter('Earth'),
+            'Moon', self.simulation_start_epoch, spice.get_body_gravitational_parameter('Earth'),
             frame_orientation='J2000')
         body_settings.get('Sun').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
-            'Sun', simulation_start_epoch, spice.get_body_gravitational_parameter('Sun'),
+            'Sun', self.simulation_start_epoch, spice.get_body_gravitational_parameter('Sun'),
             frame_orientation='J2000')
 
         # rotation model
@@ -98,7 +100,7 @@ class ReentryProblem:
         # termination settings
         # Time
         time_termination_settings = propagation_setup.propagator.time_termination(
-            simulation_start_epoch + maximum_duration,
+            self.simulation_start_epoch + maximum_duration,
             terminate_exactly_on_final_condition=False
         )
         # Altitude
@@ -168,8 +170,7 @@ class ReentryProblem:
 
         deadband_values = [deadband_c0, deadband_c1]
 
-        # Set simulation start epoch
-        simulation_start_epoch = 0.0  # s
+
 
 
 
@@ -229,7 +230,7 @@ class ReentryProblem:
         # Transform the state to the global (inertial) frame
         initial_cartesian_state_inertial = environment.transform_to_inertial_orientation(
             initial_cartesian_state_body_fixed,
-            simulation_start_epoch,
+            self.simulation_start_epoch,
             earth_rotational_model)
 
         # pre-maneuver initial state
@@ -247,7 +248,7 @@ class ReentryProblem:
         # Transform the state to the global (inertial) frame
         initial_cartesian_state_inertial_disconnect = environment.transform_to_inertial_orientation(
             initial_cartesian_state_body_fixed_disconnect,
-            simulation_start_epoch,
+            self.simulation_start_epoch,
             earth_rotational_model)
 
         # body to propagate and central body
@@ -273,7 +274,7 @@ class ReentryProblem:
                                                                          acceleration_models,
                                                                          bodies_to_propagate,
                                                                          initial_cartesian_state_inertial,
-                                                                         simulation_start_epoch,
+                                                                         self.simulation_start_epoch,
                                                                          None,
                                                                          self.termination_settings,
                                                                          propagation_setup.propagator.cowell,
