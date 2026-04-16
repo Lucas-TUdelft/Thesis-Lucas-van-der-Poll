@@ -26,7 +26,7 @@ import pygmo as pg
 
 # Problem-specific imports
 import EntryUtilities_multiprocessing as Util
-import OptimisationUtilities2 as OptUtil
+import OptimizationUtilities2 as OptUtil
 
 def init_worker():
     spice.load_standard_kernels()
