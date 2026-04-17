@@ -49,9 +49,6 @@ class ReentryProblem:
         # Set simulation start epoch
         self.simulation_start_epoch = 0.0  # s
 
-        # Set termination conditions
-        maximum_duration = constants.JULIAN_DAY  # s
-        termination_altitude = 30.0E3  # m
 
 
 
@@ -75,9 +72,15 @@ class ReentryProblem:
 
         deadband_values = [deadband_c0, deadband_c1]
 
+
         global GLOBAL_BODIES
 
         if GLOBAL_BODIES is None:
+
+            # Set termination conditions
+            maximum_duration = constants.JULIAN_DAY  # s
+            termination_altitude = 30.0E3  # m
+
             # Define settings for celestial bodies
             bodies_to_create = ['Earth', 'Moon', 'Sun']
 
