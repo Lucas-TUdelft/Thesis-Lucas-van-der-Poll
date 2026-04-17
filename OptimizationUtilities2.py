@@ -152,27 +152,27 @@ class ReentryProblem:
                 station_altitude = 35.0  # m
                 station_latitude = np.deg2rad(48.8575)  # rad
                 station_longitude = np.deg2rad(2.3514)  # rad
-                estimated_flight_time = 1050  # s
+                self.estimated_flight_time = 1050  # s
             elif self.target_location == 'Cabo Verde':
                 station_altitude = 37.0  # m
                 station_latitude = np.deg2rad(14.9198)  # rad
                 station_longitude = np.deg2rad(-23.5073)  # rad
-                estimated_flight_time = 575  # s
+                self.estimated_flight_time = 575  # s
             elif self.target_location == 'Natal':
                 station_altitude = 30.0  # m
                 station_latitude = np.deg2rad(-5.7842)  # rad
                 station_longitude = np.deg2rad(-35.2000)  # rad
-                estimated_flight_time = 420  # s
+                self.estimated_flight_time = 420  # s
             elif self.target_location == 'Canarias':
                 station_altitude = 0.0  # m
                 station_latitude = np.deg2rad(28.2916)  # rad
                 station_longitude = np.deg2rad(-16.6291)  # rad
-                estimated_flight_time = 755  # s
+                self.estimated_flight_time = 755  # s
             elif self.target_location == 'Azores':
                 station_altitude = 0.0  # m
                 station_latitude = np.deg2rad(37.7412)  # rad
                 station_longitude = np.deg2rad(-25.6756)  # rad
-                estimated_flight_time = 750  # s
+                self.estimated_flight_time = 750  # s
 
             ground_station_settings = environment_setup.ground_station.basic_station(
                 "LandingPad",
@@ -298,7 +298,7 @@ class ReentryProblem:
         # bank angle guidance
         aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
             os.path.join(script_dir, self.target_location + '_apollo_data_vref.npz'), bodies, deadband_values,
-            estimated_flight_time, K=guidance_K)
+            self.estimated_flight_time, K=guidance_K)
         rotation_model_settings = environment_setup.rotation_model.aerodynamic_angle_based(
             'Earth', '', 'BodyFixed', aerodynamic_guidance_object.getAerodynamicAngles)
         environment_setup.add_rotation_model(bodies, 'Capsule', rotation_model_settings)
@@ -313,7 +313,7 @@ class ReentryProblem:
         gamma0 = np.rad2deg(aerodynamic_guidance_object.gamma0)
         t0 = aerodynamic_guidance_object.t0
         s_target = aerodynamic_guidance_object.s_target
-        estimated_flight_time = result2array(dynamics_simulator.dependent_variable_history)[:, 0][-1]
+        self.estimated_flight_time = result2array(dynamics_simulator.dependent_variable_history)[:, 0][-1]
         # print('estimated flight time:', estimated_flight_time)
 
         # acquire reference bank angle and generate corresponding reference trajectory
@@ -328,7 +328,7 @@ class ReentryProblem:
         # bank angle guidance
         aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
             os.path.join(script_dir, self.target_location + '_apollo_data_vref.npz'), bodies, deadband_values,
-            estimated_flight_time, K=guidance_K)
+            self.estimated_flight_time, K=guidance_K)
         bodies.get_body('Capsule').rotation_model.reset_aerodynamic_angle_function(
             aerodynamic_guidance_object.getAerodynamicAngles)
 
