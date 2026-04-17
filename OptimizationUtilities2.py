@@ -31,6 +31,8 @@ import EntryUtilities_multiprocessing as Util
 # DEFINE PROBLEM ##########################################################
 ###########################################################################
 
+GLOBAL_BODIES = None
+
 class ReentryProblem:
 
     def __init__(self,
@@ -51,104 +53,7 @@ class ReentryProblem:
         maximum_duration = constants.JULIAN_DAY  # s
         termination_altitude = 30.0E3  # m
 
-        # Define settings for celestial bodies
-        bodies_to_create = ['Earth', 'Moon', 'Sun']
 
-        # Define coordinate system
-        global_frame_origin = 'Earth'
-        global_frame_orientation = 'J2000'
-
-        # Create body settings
-        body_settings = environment_setup.get_default_body_settings(
-            bodies_to_create,
-            global_frame_origin,
-            global_frame_orientation)
-
-        # Earth shape
-        equitorial_radius = 6378137.0
-        flattening = 1 / 298.25
-        body_settings.get('Earth').shape_settings = environment_setup.shape.oblate_spherical(
-            equitorial_radius, flattening)
-
-        # atmosphere
-        body_settings.get("Earth").atmosphere_settings = environment_setup.atmosphere.nrlmsise00()
-
-        # spherical harmonic field
-        body_settings.get(
-            "Earth").gravity_field_settings = environment_setup.gravity_field.predefined_spherical_harmonic(
-            environment_setup.gravity_field.ggm02c, 32)
-
-        # keplerian ephemerides
-        body_settings.get('Earth').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
-            'Earth', self.simulation_start_epoch, spice.get_body_gravitational_parameter('Sun'),
-            frame_orientation='J2000')
-        body_settings.get('Moon').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
-            'Moon', self.simulation_start_epoch, spice.get_body_gravitational_parameter('Earth'),
-            frame_orientation='J2000')
-        body_settings.get('Sun').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
-            'Sun', self.simulation_start_epoch, spice.get_body_gravitational_parameter('Sun'),
-            frame_orientation='J2000')
-
-        # rotation model
-        body_settings.get('Earth').rotation_model_settings = environment_setup.rotation_model.gcrs_to_itrs(
-            base_frame='J2000')
-        body_settings.get('Earth').gravity_field_settings.associated_reference_frame = 'ITRS'
-
-        # create bodies
-        self.bodies = environment_setup.create_system_of_bodies(body_settings)
-
-        # termination settings
-        # Time
-        time_termination_settings = propagation_setup.propagator.time_termination(
-            self.simulation_start_epoch + maximum_duration,
-            terminate_exactly_on_final_condition=False
-        )
-        # Altitude
-        lower_altitude_termination_settings = propagation_setup.propagator.dependent_variable_termination(
-            dependent_variable_settings=propagation_setup.dependent_variable.altitude('Capsule', 'Earth'),
-            limit_value=termination_altitude,
-            use_as_lower_limit=True,
-            terminate_exactly_on_final_condition=False
-        )
-        # Define list of termination settings
-        termination_settings_list = [time_termination_settings,
-                                     lower_altitude_termination_settings]
-        # Create termination settings object (when either the time of altitude condition is reached: propaation terminates)
-        self.termination_settings = propagation_setup.propagator.hybrid_termination(termination_settings_list,
-                                                                               fulfill_single_condition=True)
-
-        # create ground station
-        if self.target_location == 'Paris':
-            station_altitude = 35.0  # m
-            station_latitude = np.deg2rad(48.8575)  # rad
-            station_longitude = np.deg2rad(2.3514)  # rad
-            estimated_flight_time = 1050  # s
-        elif self.target_location == 'Cabo Verde':
-            station_altitude = 37.0  # m
-            station_latitude = np.deg2rad(14.9198)  # rad
-            station_longitude = np.deg2rad(-23.5073)  # rad
-            estimated_flight_time = 575  # s
-        elif self.target_location == 'Natal':
-            station_altitude = 30.0  # m
-            station_latitude = np.deg2rad(-5.7842)  # rad
-            station_longitude = np.deg2rad(-35.2000)  # rad
-            estimated_flight_time = 420  # s
-        elif self.target_location == 'Canarias':
-            station_altitude = 0.0  # m
-            station_latitude = np.deg2rad(28.2916)  # rad
-            station_longitude = np.deg2rad(-16.6291)  # rad
-            estimated_flight_time = 755  # s
-        elif self.target_location == 'Azores':
-            station_altitude = 0.0  # m
-            station_latitude = np.deg2rad(37.7412)  # rad
-            station_longitude = np.deg2rad(-25.6756)  # rad
-            estimated_flight_time = 750  # s
-
-        ground_station_settings = environment_setup.ground_station.basic_station(
-            "LandingPad",
-            [station_altitude, station_latitude, station_longitude],
-            element_conversion.geodetic_position_type)
-        environment_setup.add_ground_station(self.bodies.get_body("Earth"), ground_station_settings)
 
     def get_bounds(self):
         return self.bounds
@@ -170,16 +75,116 @@ class ReentryProblem:
 
         deadband_values = [deadband_c0, deadband_c1]
 
+        global GLOBAL_BODIES
+
+        if GLOBAL_BODIES is None:
+            # Define settings for celestial bodies
+            bodies_to_create = ['Earth', 'Moon', 'Sun']
+
+            # Define coordinate system
+            global_frame_origin = 'Earth'
+            global_frame_orientation = 'J2000'
+
+            # Create body settings
+            body_settings = environment_setup.get_default_body_settings(
+                bodies_to_create,
+                global_frame_origin,
+                global_frame_orientation)
+
+            # Earth shape
+            equitorial_radius = 6378137.0
+            flattening = 1 / 298.25
+            body_settings.get('Earth').shape_settings = environment_setup.shape.oblate_spherical(
+                equitorial_radius, flattening)
+
+            # atmosphere
+            body_settings.get("Earth").atmosphere_settings = environment_setup.atmosphere.nrlmsise00()
+
+            # spherical harmonic field
+            body_settings.get(
+                "Earth").gravity_field_settings = environment_setup.gravity_field.predefined_spherical_harmonic(
+                environment_setup.gravity_field.ggm02c, 32)
+
+            # keplerian ephemerides
+            body_settings.get('Earth').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
+                'Earth', self.simulation_start_epoch, spice.get_body_gravitational_parameter('Sun'),
+                frame_orientation='J2000')
+            body_settings.get('Moon').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
+                'Moon', self.simulation_start_epoch, spice.get_body_gravitational_parameter('Earth'),
+                frame_orientation='J2000')
+            body_settings.get('Sun').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
+                'Sun', self.simulation_start_epoch, spice.get_body_gravitational_parameter('Sun'),
+                frame_orientation='J2000')
+
+            # rotation model
+            body_settings.get('Earth').rotation_model_settings = environment_setup.rotation_model.gcrs_to_itrs(
+                base_frame='J2000')
+            body_settings.get('Earth').gravity_field_settings.associated_reference_frame = 'ITRS'
+
+            # create bodies
+            GLOBAL_BODIES = environment_setup.create_system_of_bodies(body_settings)
+
+            # termination settings
+            # Time
+            time_termination_settings = propagation_setup.propagator.time_termination(
+                self.simulation_start_epoch + maximum_duration,
+                terminate_exactly_on_final_condition=False
+            )
+            # Altitude
+            lower_altitude_termination_settings = propagation_setup.propagator.dependent_variable_termination(
+                dependent_variable_settings=propagation_setup.dependent_variable.altitude('Capsule', 'Earth'),
+                limit_value=termination_altitude,
+                use_as_lower_limit=True,
+                terminate_exactly_on_final_condition=False
+            )
+            # Define list of termination settings
+            termination_settings_list = [time_termination_settings,
+                                         lower_altitude_termination_settings]
+            # Create termination settings object (when either the time of altitude condition is reached: propaation terminates)
+            self.termination_settings = propagation_setup.propagator.hybrid_termination(termination_settings_list,
+                                                                                        fulfill_single_condition=True)
+
+            # create ground station
+            if self.target_location == 'Paris':
+                station_altitude = 35.0  # m
+                station_latitude = np.deg2rad(48.8575)  # rad
+                station_longitude = np.deg2rad(2.3514)  # rad
+                estimated_flight_time = 1050  # s
+            elif self.target_location == 'Cabo Verde':
+                station_altitude = 37.0  # m
+                station_latitude = np.deg2rad(14.9198)  # rad
+                station_longitude = np.deg2rad(-23.5073)  # rad
+                estimated_flight_time = 575  # s
+            elif self.target_location == 'Natal':
+                station_altitude = 30.0  # m
+                station_latitude = np.deg2rad(-5.7842)  # rad
+                station_longitude = np.deg2rad(-35.2000)  # rad
+                estimated_flight_time = 420  # s
+            elif self.target_location == 'Canarias':
+                station_altitude = 0.0  # m
+                station_latitude = np.deg2rad(28.2916)  # rad
+                station_longitude = np.deg2rad(-16.6291)  # rad
+                estimated_flight_time = 755  # s
+            elif self.target_location == 'Azores':
+                station_altitude = 0.0  # m
+                station_latitude = np.deg2rad(37.7412)  # rad
+                station_longitude = np.deg2rad(-25.6756)  # rad
+                estimated_flight_time = 750  # s
+
+            ground_station_settings = environment_setup.ground_station.basic_station(
+                "LandingPad",
+                [station_altitude, station_latitude, station_longitude],
+                element_conversion.geodetic_position_type)
+            environment_setup.add_ground_station(GLOBAL_BODIES.get_body("Earth"), ground_station_settings)
 
 
-
-
+        bodies = GLOBAL_BODIES
 
 
         # capsule
-        self.bodies.create_empty_body('Capsule')
+        bodies.create_empty_body('Capsule')
         new_capsule_mass = 10648.25  # kg
-        self.bodies.get_body('Capsule').mass = new_capsule_mass
+        bodies.get_body('Capsule').mass = new_capsule_mass
         reference_area = 60.82  # m^2
         script_dir = os.path.dirname(os.path.abspath(__file__))
         lookup_tables_path = os.path.join(script_dir, "AerodynamicLookupTables")
@@ -194,7 +199,7 @@ class ReentryProblem:
             independent_variable_names=[aerodynamics.altitude_dependent, aerodynamics.mach_number_dependent]
         )
 
-        environment_setup.add_aerodynamic_coefficient_interface(self.bodies, 'Capsule', aero_coefficient_settings)
+        environment_setup.add_aerodynamic_coefficient_interface(bodies, 'Capsule', aero_coefficient_settings)
 
         # dependent variables
         dependent_variables_to_save = [propagation_setup.dependent_variable.mach_number('Capsule', 'Earth'),
@@ -226,7 +231,7 @@ class ReentryProblem:
         initial_cartesian_state_body_fixed = element_conversion.spherical_to_cartesian_elementwise(
             radial_distance, latitude, longitude, speed, flight_path_angle, heading_angle)
         # Get rotational ephemerides of the Earth
-        earth_rotational_model = self.bodies.get_body('Earth').rotation_model
+        earth_rotational_model = bodies.get_body('Earth').rotation_model
         # Transform the state to the global (inertial) frame
         initial_cartesian_state_inertial = environment.transform_to_inertial_orientation(
             initial_cartesian_state_body_fixed,
@@ -265,7 +270,7 @@ class ReentryProblem:
         # Create acceleration models.
         acceleration_settings = {'Capsule': acceleration_settings_on_vehicle}
         acceleration_models = propagation_setup.create_acceleration_models(
-            self.bodies,
+            bodies,
             acceleration_settings,
             bodies_to_propagate,
             central_bodies)
@@ -289,15 +294,15 @@ class ReentryProblem:
 
         # bank angle guidance
         aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
-            os.path.join(script_dir, self.target_location + '_apollo_data_vref.npz'), self.bodies, deadband_values,
+            os.path.join(script_dir, self.target_location + '_apollo_data_vref.npz'), bodies, deadband_values,
             estimated_flight_time, K=guidance_K)
         rotation_model_settings = environment_setup.rotation_model.aerodynamic_angle_based(
             'Earth', '', 'BodyFixed', aerodynamic_guidance_object.getAerodynamicAngles)
-        environment_setup.add_rotation_model(self.bodies, 'Capsule', rotation_model_settings)
+        environment_setup.add_rotation_model(bodies, 'Capsule', rotation_model_settings)
 
         # generate guidance entry conditions
         dynamics_simulator = numerical_simulation.create_dynamics_simulator(
-            self.bodies,
+            bodies,
             propagator_settings)
 
         h0 = aerodynamic_guidance_object.h0
@@ -319,14 +324,14 @@ class ReentryProblem:
 
         # bank angle guidance
         aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
-            os.path.join(script_dir, self.target_location + '_apollo_data_vref.npz'), self.bodies, deadband_values,
+            os.path.join(script_dir, self.target_location + '_apollo_data_vref.npz'), bodies, deadband_values,
             estimated_flight_time, K=guidance_K)
-        self.bodies.get_body('Capsule').rotation_model.reset_aerodynamic_angle_function(
+        bodies.get_body('Capsule').rotation_model.reset_aerodynamic_angle_function(
             aerodynamic_guidance_object.getAerodynamicAngles)
 
         # simulation
         dynamics_simulator = numerical_simulation.create_dynamics_simulator(
-            self.bodies,
+            bodies,
             propagator_settings)
 
         state_history = dynamics_simulator.state_history
@@ -353,23 +358,23 @@ class ReentryProblem:
         heatflux = k_heatflux * np.sqrt(rho / R_n) * v_3
         max_heatflux = max(heatflux)
         total_heatload = np.trapz(heatflux)
-        final_groudstation_position_bodyfixed = self.bodies.get_body("Earth").get_ground_station(
+        final_groudstation_position_bodyfixed = bodies.get_body("Earth").get_ground_station(
             "LandingPad").station_state.get_cartesian_position(0.0)
         station_final_intertial_velocity = environment.transform_to_inertial_orientation(
             np.append(final_groudstation_position_bodyfixed, [0.0, 0.0, 0.0]),
             dependent_variables_time[-1],
-            self.bodies.get_body('Earth').rotation_model
+            bodies.get_body('Earth').rotation_model
         )[3:6]
         final_velocity = np.linalg.norm(station_final_intertial_velocity - velocity_vector[-1])
         succesfull_completion = dynamics_simulator.integration_completed_successfully
 
         # optimisation objectives: final distance to target, propellant, number of bank reversals
         Earth_radius = 6371 * 10 ** 3  # m
-        final_vehicle_position_bodyfixed = self.bodies.get_body(
+        final_vehicle_position_bodyfixed = bodies.get_body(
             'Capsule').flight_conditions.body_centered_body_fixed_state[0:3]
         final_vehicle_position_bodyfixed_unit = final_vehicle_position_bodyfixed / np.linalg.norm(
             final_vehicle_position_bodyfixed)
-        final_groudstation_position_bodyfixed = self.bodies.get_body("Earth").get_ground_station(
+        final_groudstation_position_bodyfixed = bodies.get_body("Earth").get_ground_station(
             "LandingPad").station_state.get_cartesian_position(0.0)
         final_groudstation_position_bodyfixed_unit = final_groudstation_position_bodyfixed / np.linalg.norm(
             final_groudstation_position_bodyfixed)
@@ -383,8 +388,8 @@ class ReentryProblem:
         delta_V = np.linalg.norm(initial_velocity_correction)
         Isp = 360
         g0 = 9.807
-        m0 = self.bodies.get_body('Capsule').mass * np.exp(delta_V / (Isp * g0))
-        mp = m0 - self.bodies.get_body('Capsule').mass
+        m0 = bodies.get_body('Capsule').mass * np.exp(delta_V / (Isp * g0))
+        mp = m0 - bodies.get_body('Capsule').mass
 
         n_bank_reversals = aerodynamic_guidance_object.number_of_bank_reversals
 
