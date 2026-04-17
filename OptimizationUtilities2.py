@@ -32,6 +32,7 @@ import EntryUtilities_multiprocessing as Util
 ###########################################################################
 
 GLOBAL_BODIES = None
+GLOBAL_TERMINATION = None
 
 class ReentryProblem:
 
@@ -73,9 +74,9 @@ class ReentryProblem:
         deadband_values = [deadband_c0, deadband_c1]
 
 
-        global GLOBAL_BODIES
+        global GLOBAL_BODIES, GLOBAL_TERMINATION
 
-        if GLOBAL_BODIES is None:
+        if GLOBAL_BODIES is None or GLOBAL_TERMINATION is None:
 
             # Set termination conditions
             maximum_duration = constants.JULIAN_DAY  # s
@@ -144,7 +145,7 @@ class ReentryProblem:
             termination_settings_list = [time_termination_settings,
                                          lower_altitude_termination_settings]
             # Create termination settings object (when either the time of altitude condition is reached: propaation terminates)
-            self.termination_settings = propagation_setup.propagator.hybrid_termination(termination_settings_list,
+            GLOBAL_TERMINATION = propagation_setup.propagator.hybrid_termination(termination_settings_list,
                                                                                         fulfill_single_condition=True)
 
             # create ground station
@@ -182,6 +183,7 @@ class ReentryProblem:
 
 
         bodies = GLOBAL_BODIES
+        termination_settings = GLOBAL_TERMINATION
 
 
         # capsule
@@ -284,7 +286,7 @@ class ReentryProblem:
                                                                          initial_cartesian_state_inertial,
                                                                          self.simulation_start_epoch,
                                                                          None,
-                                                                         self.termination_settings,
+                                                                         termination_settings,
                                                                          propagation_setup.propagator.cowell,
                                                                          output_variables=dependent_variables_to_save)
 
