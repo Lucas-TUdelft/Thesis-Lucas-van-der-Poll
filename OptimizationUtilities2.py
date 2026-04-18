@@ -471,5 +471,8 @@ class optimization:
                 results_this_repeat.append(pop.get_f())
             self.results_per_generation.append(results_this_repeat)
 
-            self.results.append(pop)
+            final_x = pop.get_x()
+            final_f = pop.get_f()
+            self.results.append([final_x, final_f])
+            del pop
         return None

@@ -41,10 +41,11 @@ def run_optimization(location):
         # did: nsga2, maco, moead, moead_gen, ihs, nspso
 
         optimizer_name = 'moead_gen'
-        num_repeats = 2
+        num_repeats = 1
         num_generations = 20
         num_pops = 400
-        seeds = [42, 22, 96, 35, 11]
+        # seeds = [42, 22, 96, 35, 11]
+        seeds = [42]
 
         target_location = location
 
