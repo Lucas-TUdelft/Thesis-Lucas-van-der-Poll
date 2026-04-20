@@ -138,8 +138,8 @@ def run_optimization(location):
         output_to_store = []
 
         for i in range(num_repeats):
-            x = output[i].get_x()
-            y = output[i].get_f()
+            x = output[i][0]
+            y = output[i][1]
             y_per_gen = output_per_generation[i]
 
             output_to_store.append([x,y,y_per_gen])
