@@ -447,7 +447,7 @@ class optimization:
                 algo = pg.algorithm(self.optimizer(seed=seed, ker = numpops - 20))
                 algo.set_verbosity(1)
             else:
-                algo = pg.algorithm(self.optimizer(seed=seed, weight_generation = "low discrepancy", neighbours = 40))
+                algo = pg.algorithm(self.optimizer(seed=seed, weight_generation = "low discrepancy", neighbours = 20))
             pop = pg.population(problem, numpops, seed=seed)
             results_this_repeat = []
 
