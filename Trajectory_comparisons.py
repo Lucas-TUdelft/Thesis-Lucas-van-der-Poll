@@ -30,7 +30,7 @@ import EntryUtilities as Util
 # Load spice kernels
 spice_interface.load_standard_kernels()
 
-target_location = 'Azores'
+target_location = 'Natal'
 if target_location == 'Paris':
     default_inputs = [7505,
                       np.deg2rad(35.0),
@@ -107,7 +107,7 @@ elif target_location == 'Azores':
     # guidance_K = 1 # -
     # deadband_values = [np.deg2rad(2.0), np.deg2rad((8.0 / (7000 ** 2)))] # rad, rad/(m/s^2)
 
-labels = ['0.02 deadband c0', '0.05 deadband c0', '0.08 deadband c0']
+labels = ['Least mp', 'Initial Guess', 'Least bank reversals']
 trajectory_values = [0.02, 0.05, 0.08]
 
 times = []
@@ -119,12 +119,37 @@ latitudes = []
 longitudes = []
 
 for i in range(len(labels)):
+    '''
     speed = default_inputs[0]
     heading_angle = default_inputs[1]
     flight_path_angle = default_inputs[2]
     guidance_K = default_inputs[3]
     deadband_c0 = trajectory_values[i]  #default_inputs[4]
     deadband_c1 = default_inputs[5]
+
+    
+    '''
+    if i == 0:
+        speed = 6.42041334e+03
+        heading_angle = 2.19759720e+00
+        flight_path_angle = -1.14722825e-02
+        guidance_K = 2.88804494e+00
+        deadband_c0 = 8.24738566e-03
+        deadband_c1 = 6.29421765e-10
+    if i == 1:
+        speed = default_inputs[0]
+        heading_angle = default_inputs[1]
+        flight_path_angle = default_inputs[2]
+        guidance_K = default_inputs[3]
+        deadband_c0 = default_inputs[4]  # default_inputs[4]
+        deadband_c1 = default_inputs[5]
+    if i == 2:
+        speed = 6.40756672e+03
+        heading_angle = 2.19802973e+00
+        flight_path_angle = -1.06078614e-02
+        guidance_K = 3.54452788e+00
+        deadband_c0 = 2.20202191e-02
+        deadband_c1 = 6.44187621e-10
 
     deadband_values = [deadband_c0, deadband_c1]
 
@@ -395,7 +420,17 @@ for i in range(len(labels)):
     dot_product = np.dot(final_vehicle_position_bodyfixed_unit, final_groudstation_position_bodyfixed_unit)
     dot_product = np.clip(dot_product, -1.0, 1.0)
     final_distance_to_target = Earth_radius * np.arccos(dot_product)
-    print(final_distance_to_target)
+    print('final distance to target:', final_distance_to_target)
+
+    # calculate delta-V
+    initial_velocity_correction = (initial_cartesian_state_inertial_disconnect -
+                                   initial_cartesian_state_inertial)[3:6]
+    delta_V = np.linalg.norm(initial_velocity_correction)
+    Isp = 360
+    g0 = 9.807
+    m0 = bodies.get_body('Capsule').mass * np.exp(delta_V / (Isp * g0))
+    mp = m0 - bodies.get_body('Capsule').mass
+    print('propellant mass:', mp)
 
     times.append(dependent_variables_time)
     altitudes.append(h)
