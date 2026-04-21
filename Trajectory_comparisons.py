@@ -30,7 +30,7 @@ import EntryUtilities as Util
 # Load spice kernels
 spice_interface.load_standard_kernels()
 
-target_location = 'Natal'
+target_location = 'Cabo Verde'
 if target_location == 'Paris':
     default_inputs = [7505,
                       np.deg2rad(35.0),
@@ -107,7 +107,7 @@ elif target_location == 'Azores':
     # guidance_K = 1 # -
     # deadband_values = [np.deg2rad(2.0), np.deg2rad((8.0 / (7000 ** 2)))] # rad, rad/(m/s^2)
 
-labels = ['Least mp', 'Initial Guess', 'Least bank reversals']
+labels = ['Least mp', 'Initial Guess']
 trajectory_values = [0.02, 0.05, 0.08]
 
 times = []
@@ -119,6 +119,7 @@ latitudes = []
 longitudes = []
 
 for i in range(len(labels)):
+    print(labels[i])
     '''
     speed = default_inputs[0]
     heading_angle = default_inputs[1]
@@ -129,6 +130,8 @@ for i in range(len(labels)):
 
     
     '''
+    '''
+    # Natal
     if i == 0:
         speed = 6.42041334e+03
         heading_angle = 2.19759720e+00
@@ -150,6 +153,23 @@ for i in range(len(labels)):
         guidance_K = 3.54452788e+00
         deadband_c0 = 2.20202191e-02
         deadband_c1 = 6.44187621e-10
+    '''
+    # Cabo Verde
+
+    if i == 0:
+        speed = 6.93255546e+03
+        heading_angle = 1.19658593e+00
+        flight_path_angle = -1.13154216e-02
+        guidance_K = 1.34361265e+00
+        deadband_c0 = 7.41931065e-03
+        deadband_c1 = 1.43087627e-09
+    if i == 1:
+        speed = default_inputs[0]
+        heading_angle = default_inputs[1]
+        flight_path_angle = default_inputs[2]
+        guidance_K = default_inputs[3]
+        deadband_c0 = default_inputs[4]  # default_inputs[4]
+        deadband_c1 = default_inputs[5]
 
     deadband_values = [deadband_c0, deadband_c1]
 

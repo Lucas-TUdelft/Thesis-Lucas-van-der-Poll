@@ -4,7 +4,7 @@ import numpy as np
 import math
 import os
 
-plot_location = 'Natal'
+plot_location = 'Cabo Verde'
 seeds = [42]
 
 fig, axs = plt.subplots(1,1)
@@ -52,7 +52,7 @@ for i in range(len(seeds)):
         gen_avg = 0
         num_valid = 0
         for k in range(y_arr.shape[1]):
-            avg_one_pop = np.sum(y_arr[j, k]) / 2
+            avg_one_pop = np.sum(y_arr[j, k])
 
             if avg_one_pop <= 1000.0:
                 gen_avg += avg_one_pop

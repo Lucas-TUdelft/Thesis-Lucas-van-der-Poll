@@ -45,7 +45,7 @@ def run_optimization(location):
         num_generations = 20
         num_pops = 400
         # seeds = [42, 22, 96, 35, 11]
-        seeds = [42]
+        seeds = [22]
 
         target_location = location
 
@@ -152,6 +152,7 @@ def run_optimization(location):
         filename = os.path.join(output_folder, filename)
         file = open(filename, 'wb')
         pickle.dump(output_to_store, file)
+        file.close()
 
 
         print(f"--- Finished Simulation with Parameter: {location} ---")
