@@ -30,7 +30,7 @@ import EntryUtilities as Util
 # Load spice kernels
 spice_interface.load_standard_kernels()
 
-target_location = 'Cabo Verde'
+target_location = 'Natal'
 if target_location == 'Paris':
     default_inputs = [7505,
                       np.deg2rad(35.0),
@@ -130,6 +130,21 @@ for i in range(len(labels)):
 
     
     '''
+    if i == 0:
+        speed = default_inputs[0] + 50
+        heading_angle = default_inputs[1]
+        flight_path_angle = default_inputs[2]
+        guidance_K = default_inputs[3]
+        deadband_c0 = default_inputs[4]  # default_inputs[4]
+        deadband_c1 = default_inputs[5]
+    if i == 1:
+        speed = default_inputs[0]
+        heading_angle = default_inputs[1]
+        flight_path_angle = default_inputs[2]
+        guidance_K = default_inputs[3]
+        deadband_c0 = default_inputs[4]  # default_inputs[4]
+        deadband_c1 = default_inputs[5]
+
     '''
     # Natal
     if i == 0:
@@ -154,6 +169,7 @@ for i in range(len(labels)):
         deadband_c0 = 2.20202191e-02
         deadband_c1 = 6.44187621e-10
     '''
+    '''
     # Cabo Verde
 
     if i == 0:
@@ -170,6 +186,7 @@ for i in range(len(labels)):
         guidance_K = default_inputs[3]
         deadband_c0 = default_inputs[4]  # default_inputs[4]
         deadband_c1 = default_inputs[5]
+    '''
 
     deadband_values = [deadband_c0, deadband_c1]
 
@@ -446,6 +463,7 @@ for i in range(len(labels)):
     initial_velocity_correction = (initial_cartesian_state_inertial_disconnect -
                                    initial_cartesian_state_inertial)[3:6]
     delta_V = np.linalg.norm(initial_velocity_correction)
+    print(initial_velocity_correction)
     Isp = 360
     g0 = 9.807
     m0 = bodies.get_body('Capsule').mass * np.exp(delta_V / (Isp * g0))

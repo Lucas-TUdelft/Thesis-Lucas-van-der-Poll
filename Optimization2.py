@@ -45,7 +45,7 @@ def run_optimization(location):
         num_generations = 20
         num_pops = 400
         # seeds = [42, 22, 96, 35, 11]
-        seeds = [22]
+        seeds = [96]
 
         target_location = location
 

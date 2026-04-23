@@ -4,7 +4,7 @@ import numpy as np
 import math
 import os
 
-plot_location = 'Cabo Verde'
+plot_location = 'Azores'
 seeds = [42]
 
 fig, axs = plt.subplots(1,1)
