@@ -4,8 +4,8 @@ import numpy as np
 import math
 import os
 
-plot_location = 'Azores'
-seeds = [42]
+plot_location = 'Paris'
+seeds = [42, 22, 96]
 
 fig, axs = plt.subplots(1,1)
 
