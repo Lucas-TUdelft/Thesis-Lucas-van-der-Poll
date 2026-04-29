@@ -4,8 +4,8 @@ import numpy as np
 import math
 import os
 
-plot_location = 'Paris'
-seeds = [42, 22, 96]
+plot_location = 'Natal'
+seeds = [42, 22, 96, 35, 11]
 
 fig, axs = plt.subplots(1,1)
 
@@ -106,3 +106,34 @@ for i in range(len(seeds)):
     best_mp_inputs = x[best_mp_fitness_i]
     best_bank_inputs = x[best_bank_fitness_i]
     print(best_mp_inputs, best_bank_inputs)
+
+fig, axs = plt.subplots(1,1)
+
+for i in range(len(seeds)):
+    data_folder = 'SimulationOutput'
+    data_subfolder = 'Optimization full'
+    data_folder = os.path.join(data_folder, data_subfolder)
+    data_folder = os.path.join(data_folder, plot_location)
+    data_file = os.path.join(data_folder, plot_location + str(seeds[i]) + '.dat')
+    file = open(data_file, 'rb')
+    data = pickle.load(file)
+    file.close()
+    x = data[0][0]
+    y = data[0][1]
+    y_per_gen = data[0][2]
+    y_arr = np.array(y_per_gen)
+    best_fitness_list = []
+    for j in range(y_arr.shape[0]):
+        best_mp_fitness = 100
+        for k in range(y_arr.shape[1]):
+            if y_arr[j, k, 0] <= best_mp_fitness:
+                best_mp_fitness = y_arr[j, k, 0]
+        best_fitness_list.append(best_mp_fitness)
+    axs.plot(range(len(avg_arr)), best_fitness_list, label=seeds[i])
+    axs.grid()
+    axs.set_xlabel('evolutions done')
+    axs.set_ylabel('best fitness')
+    axs.legend()
+    axs.set_title(plot_location)
+plt.tight_layout()
+plt.show()
