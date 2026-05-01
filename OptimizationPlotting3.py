@@ -4,14 +4,15 @@ import numpy as np
 import math
 import os
 
-plot_location = 'Cabo Verde'
-seeds = [42, 22, 96, 35, 11]
+plot_location = 'Natal'
+#seeds = [42, 22, 96, 35, 11]
+seeds = [42]
 
 fig, axs = plt.subplots(1,1)
 
 for i in range(len(seeds)):
     data_folder = 'SimulationOutput'
-    data_subfolder = 'Optimization full'
+    data_subfolder = 'Optimization expanded'
     data_folder = os.path.join(data_folder, data_subfolder)
     data_folder = os.path.join(data_folder, plot_location)
     data_file = os.path.join(data_folder, plot_location + str(seeds[i]) + '.dat')
@@ -36,7 +37,7 @@ fig, axs = plt.subplots(1,1)
 
 for i in range(len(seeds)):
     data_folder = 'SimulationOutput'
-    data_subfolder = 'Optimization full'
+    data_subfolder = 'Optimization expanded'
     data_folder = os.path.join(data_folder, data_subfolder)
     data_folder = os.path.join(data_folder, plot_location)
     data_file = os.path.join(data_folder, plot_location + str(seeds[i]) + '.dat')
@@ -73,7 +74,7 @@ plt.show()
 
 for i in range(len(seeds)):
     data_folder = 'SimulationOutput'
-    data_subfolder = 'Optimization full'
+    data_subfolder = 'Optimization expanded'
     data_folder = os.path.join(data_folder, data_subfolder)
     data_folder = os.path.join(data_folder, plot_location)
     data_file = os.path.join(data_folder, plot_location + str(seeds[i]) + '.dat')
@@ -87,22 +88,21 @@ for i in range(len(seeds)):
     best_mp_fitness = 10
     best_bank_fitness = 1.0
     best_mp_fitness_bank = 10
-    for j in range(len(y)):
-        mp_fitness = y[j,0]
-        bank_fitness = y[j,1]
+    for i in range(len(y)):
+        mp_fitness = y[i,0]
+        bank_fitness = y[i,1]
 
         if mp_fitness < best_mp_fitness:
             best_mp_fitness = mp_fitness
-            best_mp_fitness_i = j
+            best_mp_fitness_i = i
 
         if bank_fitness <= best_bank_fitness:
             if mp_fitness < best_mp_fitness_bank:
                 best_mp_fitness_bank = mp_fitness
                 best_bank_fitness = bank_fitness
-                best_bank_fitness_i = j
-                #print(i)
+                best_bank_fitness_i = i
+                print(i)
 
-    print('Seed', seeds[i])
     print(best_mp_fitness, best_bank_fitness)
     best_mp_inputs = x[best_mp_fitness_i]
     best_bank_inputs = x[best_bank_fitness_i]
@@ -112,7 +112,7 @@ fig, axs = plt.subplots(1,1)
 
 for i in range(len(seeds)):
     data_folder = 'SimulationOutput'
-    data_subfolder = 'Optimization full'
+    data_subfolder = 'Optimization expanded'
     data_folder = os.path.join(data_folder, data_subfolder)
     data_folder = os.path.join(data_folder, plot_location)
     data_file = os.path.join(data_folder, plot_location + str(seeds[i]) + '.dat')

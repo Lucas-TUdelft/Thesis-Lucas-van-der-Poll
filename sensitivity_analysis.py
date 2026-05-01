@@ -4,6 +4,8 @@
 
 # General imports
 import os
+
+import matplotlib.pyplot as plt
 import numpy as np
 
 import apollo_utils
@@ -39,6 +41,8 @@ write_results_to_file = True
 # Get path of current directory
 current_dir = os.path.dirname(__file__)
 
+
+
 # Set simulation start epoch
 simulation_start_epoch = 0.0  # s
 # Set termination conditions
@@ -49,7 +53,7 @@ termination_altitude = 30.0E3  # m
 bodies_to_create = ['Earth', 'Moon', 'Sun']
 
 # Define Ground station settings
-target_location = 'Cabo Verde'
+target_location = 'Natal'
 if target_location == 'Paris':
     speed = 7505
     heading_angle = np.deg2rad(35.0)
@@ -58,35 +62,65 @@ if target_location == 'Paris':
     station_longitude = np.deg2rad(2.3514) # rad
     estimated_flight_time = 1080
 elif target_location == 'Cabo Verde':
-    speed = 6960
-    heading_angle = np.deg2rad(68.5)
     station_altitude = 37.0 # m
     station_latitude = np.deg2rad(14.9198) # rad
     station_longitude = np.deg2rad(-23.5073) # rad
     estimated_flight_time = 560 # s
+    speed = 6.92636753e+03
+    heading_angle = 1.19643649e+00
+    flight_path_angle = -1.08428164e-02
+    guidance_K = 2.10769827e+00
+    deadband_c0 = 8.44870329e-02
+    deadband_c1 = 6.34367603e-10
 elif target_location == 'Natal':
-    speed = 6.5E3
-    heading_angle = np.deg2rad(125.5)
     station_altitude = 30.0  # m
     station_latitude = np.deg2rad(-5.7842)  # rad
     station_longitude = np.deg2rad(-35.2000)  # rad
     estimated_flight_time = 410 # s
+    speed = 6.40229918e+03
+    heading_angle = 2.19772681e+00
+    flight_path_angle = -1.00050654e-02
+    guidance_K = 4.98778632e+00
+    deadband_c0 = 2.34701833e-02
+    deadband_c1 = 5.08352784e-10
 elif target_location == 'Canarias':
-    speed = 7275
-    heading_angle = np.deg2rad(50.5)
     station_altitude = 0.0  # m
     station_latitude = np.deg2rad(28.2916) # rad
     station_longitude = np.deg2rad(-16.6291) # rad
     estimated_flight_time = 740  # s
+    speed = 7.23212043e+03
+    heading_angle = 8.85707478e-01
+    flight_path_angle = -1.00874371e-02
+    guidance_K = 4.65507844e+00
+    deadband_c0 = 1.52517932e-02
+    deadband_c1 = 1.61533571e-09
 elif target_location == 'Azores':
-    speed = 7365
-    heading_angle = np.deg2rad(31.5)
     station_altitude = 0.0  # m
     station_latitude = np.deg2rad(37.7412) # rad
     station_longitude = np.deg2rad(-25.6756) # rad
     estimated_flight_time = 730  # s
+    speed = 7.35835171e+03
+    heading_angle = 5.46522952e-01
+    flight_path_angle = -1.26315767e-02
+    guidance_K = 5.82641647e+00
+    deadband_c0 = 4.21659933e-02
+    deadband_c1 = 1.92603511e-09
+
+deadband_values = [deadband_c0, deadband_c1]
 
 ground_station_list = [station_altitude, station_latitude, station_longitude]
+
+# Set simulation start epoch
+simulation_start_epoch = 0.0  # s
+# Set termination conditions
+maximum_duration = constants.JULIAN_DAY  # s
+termination_altitude = 30.0E3  # m
+
+# Define settings for celestial bodies
+bodies_to_create = ['Earth', 'Moon', 'Sun']
+
+# Define Ground station settings
+# target_location = 'Cabo Verde'
 
 # Define coordinate system
 global_frame_origin = 'Earth'
@@ -97,7 +131,6 @@ body_settings = environment_setup.get_default_body_settings(
     bodies_to_create,
     global_frame_origin,
     global_frame_orientation)
-
 
 # Earth shape
 equitorial_radius = 6378137.0
@@ -110,8 +143,8 @@ body_settings.get("Earth").atmosphere_settings = environment_setup.atmosphere.nr
 
 # spherical harmonic field
 body_settings.get(
-        "Earth").gravity_field_settings = environment_setup.gravity_field.predefined_spherical_harmonic(
-        environment_setup.gravity_field.ggm02c, 32)
+    "Earth").gravity_field_settings = environment_setup.gravity_field.predefined_spherical_harmonic(
+    environment_setup.gravity_field.ggm02c, 32)
 
 # keplerian ephemerides
 body_settings.get('Earth').ephemeris_settings = environment_setup.ephemeris.keplerian_from_spice(
@@ -126,7 +159,7 @@ body_settings.get('Sun').ephemeris_settings = environment_setup.ephemeris.kepler
 
 # rotation model
 body_settings.get('Earth').rotation_model_settings = environment_setup.rotation_model.gcrs_to_itrs(
-        base_frame='J2000')
+    base_frame='J2000')
 body_settings.get('Earth').gravity_field_settings.associated_reference_frame = 'ITRS'
 
 # create bodies
@@ -141,12 +174,12 @@ environment_setup.add_ground_station(bodies.get_body("Earth"), ground_station_se
 
 # capsule
 bodies.create_empty_body('Capsule')
-new_capsule_mass = 19057.8 # kg
+new_capsule_mass = 10648.25  # kg
 bodies.get_body('Capsule').set_constant_mass(new_capsule_mass)
-reference_area = 60.82 # m^2
-lookup_tables_path = os.path.join(os.getcwd(),"AerodynamicLookupTables")
-aero_coefficients_files = {0: os.path.join(lookup_tables_path,"CD_table.txt"),
-                           2: os.path.join(lookup_tables_path,"CL_table.txt")}
+reference_area = 60.82  # m^2
+lookup_tables_path = os.path.join(os.getcwd(), "AerodynamicLookupTables")
+aero_coefficients_files = {0: os.path.join(lookup_tables_path, "CD_table.txt"),
+                           2: os.path.join(lookup_tables_path, "CL_table.txt")}
 
 aero_coefficient_settings = environment_setup.aerodynamic_coefficients.tabulated_force_only_from_files(
     force_coefficient_files=aero_coefficients_files,
@@ -161,10 +194,10 @@ environment_setup.add_flight_conditions(bodies, 'Capsule', 'Earth')
 
 # bank angle guidance
 aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
-    'apollo_data_vref.npz', bodies, ground_station_list, estimated_flight_time, K=1)
+    'apollo_data_vref.npz', bodies, deadband_values, estimated_flight_time, K=guidance_K)
 rotation_model_settings = environment_setup.rotation_model.aerodynamic_angle_based(
-    'Earth', '', 'BodyFixed', aerodynamic_guidance_object.getAerodynamicAngles )
-environment_setup.add_rotation_model( bodies, 'Capsule', rotation_model_settings )
+    'Earth', '', 'BodyFixed', aerodynamic_guidance_object.getAerodynamicAngles)
+environment_setup.add_rotation_model(bodies, 'Capsule', rotation_model_settings)
 
 # termination settings
 # Time
@@ -184,18 +217,20 @@ termination_settings_list = [time_termination_settings,
                              lower_altitude_termination_settings]
 # Create termination settings object (when either the time of altitude condition is reached: propaation terminates)
 hybrid_termination_settings = propagation_setup.propagator.hybrid_termination(termination_settings_list,
-                                                                                  fulfill_single_condition=True)
+                                                                              fulfill_single_condition=True)
 # dependent variables
 dependent_variables_to_save = [propagation_setup.dependent_variable.mach_number('Capsule', 'Earth'),
                                propagation_setup.dependent_variable.altitude('Capsule', 'Earth'),
-                               propagation_setup.dependent_variable.local_aerodynamic_g_load('Capsule', 'Earth'),
+                               propagation_setup.dependent_variable.local_aerodynamic_g_load('Capsule',
+                                                                                             'Earth'),
                                propagation_setup.dependent_variable.keplerian_state('Capsule', 'Earth'),
-                               propagation_setup.dependent_variable.relative_position('Capsule','Earth'),
-                               propagation_setup.dependent_variable.relative_velocity('Capsule','Earth'),
-                               propagation_setup.dependent_variable.geodetic_latitude('Capsule','Earth'),
-                               propagation_setup.dependent_variable.longitude('Capsule','Earth'),
-                               propagation_setup.dependent_variable.bank_angle('Capsule','Earth'),
-                               propagation_setup.dependent_variable.relative_speed('Capsule','Earth')
+                               propagation_setup.dependent_variable.relative_position('Capsule', 'Earth'),
+                               propagation_setup.dependent_variable.relative_velocity('Capsule', 'Earth'),
+                               propagation_setup.dependent_variable.geodetic_latitude('Capsule', 'Earth'),
+                               propagation_setup.dependent_variable.longitude('Capsule', 'Earth'),
+                               propagation_setup.dependent_variable.bank_angle('Capsule', 'Earth'),
+                               propagation_setup.dependent_variable.relative_speed('Capsule', 'Earth'),
+                               propagation_setup.dependent_variable.density('Capsule', 'Earth')
                                ]
 
 # body to propagate and central body
@@ -221,7 +256,7 @@ acceleration_models = propagation_setup.create_acceleration_models(
 radial_distance = spice_interface.get_average_radius('Earth') + 157.7E3
 latitude = np.deg2rad(5.3)
 longitude = np.deg2rad(-50.0)
-flight_path_angle = np.deg2rad(-0.8)
+# flight_path_angle = np.deg2rad(-0.8)
 
 # Convert spherical elements to body-fixed cartesian coordinates
 initial_cartesian_state_body_fixed = element_conversion.spherical_to_cartesian_elementwise(
@@ -231,6 +266,24 @@ earth_rotational_model = bodies.get_body('Earth').rotation_model
 # Transform the state to the global (inertial) frame
 initial_cartesian_state_inertial = environment.transform_to_inertial_orientation(
     initial_cartesian_state_body_fixed,
+    simulation_start_epoch,
+    earth_rotational_model)
+
+# pre-maneuver initial state
+radial_distance_disconnect = spice_interface.get_average_radius('Earth') + 157.7E3
+latitude_disconnect = np.deg2rad(5.3)
+longitude_disconnect = np.deg2rad(-50.0)
+flight_path_angle_disconnect = np.deg2rad(-0.8)
+speed_disconnect = 6.93E3
+heading_angle_disconnect = np.deg2rad(95.25)
+
+# Convert spherical elements to body-fixed cartesian coordinates
+initial_cartesian_state_body_fixed_disconnect = element_conversion.spherical_to_cartesian_elementwise(
+    radial_distance_disconnect, latitude_disconnect, longitude_disconnect, speed_disconnect,
+    flight_path_angle_disconnect, heading_angle_disconnect)
+# Transform the state to the global (inertial) frame
+initial_cartesian_state_inertial_disconnect = environment.transform_to_inertial_orientation(
+    initial_cartesian_state_body_fixed_disconnect,
     simulation_start_epoch,
     earth_rotational_model)
 
@@ -256,104 +309,168 @@ dynamics_simulator = numerical_simulation.create_dynamics_simulator(
     bodies,
     propagator_settings)
 
-baseline_state_history = dynamics_simulator.state_history
-dependent_variable_history = dynamics_simulator.dependent_variable_history
-
 h0 = aerodynamic_guidance_object.h0
 v0 = aerodynamic_guidance_object.v0
 gamma0 = np.rad2deg(aerodynamic_guidance_object.gamma0)
 t0 = aerodynamic_guidance_object.t0
 s_target = aerodynamic_guidance_object.s_target
 estimated_flight_time = result2array(dynamics_simulator.dependent_variable_history)[:, 0][-1]
-print('estimated flight time:', estimated_flight_time)
+# print('estimated flight time:', estimated_flight_time)
 
 # acquire reference bank angle and generate corresponding reference trajectory
 bank_initial = [5.0, 5.0, 5.0]
 target_margin = 5000
-max_g = 10
-max_heatflux = 1.0 * 10**6
-max_loads = [max_g, max_heatflux]
+max_g_constraint = 10
+max_heatflux_constraint = 1.0 * 10 ** 6
+max_loads = [max_g_constraint, max_heatflux_constraint]
 generate_reference_trajectory_file(h0, v0, gamma0, t0, bank_initial, s_target, target_margin, max_loads)
 
 # bank angle guidance
 aerodynamic_guidance_object = Util.ApolloGuidance.from_file(
-    'apollo_data_vref.npz', bodies, ground_station_list, estimated_flight_time, K=1)
+    'apollo_data_vref.npz', bodies, deadband_values, estimated_flight_time, K=guidance_K)
 bodies.get_body('Capsule').rotation_model.reset_aerodynamic_angle_function(
-        aerodynamic_guidance_object.getAerodynamicAngles)
+    aerodynamic_guidance_object.getAerodynamicAngles)
 
+# simulation
+dynamics_simulator = numerical_simulation.create_dynamics_simulator(
+    bodies,
+    propagator_settings)
+
+baseline_state_history = dynamics_simulator.state_history
 
 uncertainties = [10,8,6,4,2,1,0.5,0.25,0.1]
 average_position_errors = []
+simulations_within_range = []
 
+seeds = [42, 22, 96, 35, 11]
 
-for j in range(len(uncertainties)):
-    print('uncertainty:', uncertainties[j])
-    # monte carlo variation
-    sigma_r = 0.0 #uncertainties[j]
-    sigma_v = uncertainties[j] / 10
+for l in range(len(seeds)):
+    print('seed:', seeds[l])
+    rng = np.random.default_rng(seed = seeds[l])
 
-    covariance_matrix = np.diag([
-        sigma_r ** 2,
-        sigma_r ** 2,
-        sigma_r ** 2,
-        sigma_v ** 2,
-        sigma_v ** 2,
-        sigma_v ** 2,
-    ])
+    simulations_within_range_seed = []
 
-    N_loops = 100
+    for j in range(len(uncertainties)):
+        print('uncertainty:', uncertainties[j])
+        # monte carlo variation
+        sigma_r = uncertainties[j]
+        sigma_v = uncertainties[j] / 10
 
-    write_results_to_file = False
-    output_path = current_dir + '/SimulationOutput/perturbations/' if write_results_to_file else None
+        covariance_matrix = np.diag([
+            sigma_r ** 2,
+            sigma_r ** 2,
+            sigma_r ** 2,
+            sigma_v ** 2,
+            sigma_v ** 2,
+            sigma_v ** 2,
+        ])
 
-    times = []
-    errors = []
-    perturbations = []
-    maximum_errors = []
-    for i in range(N_loops):
-        print('Loop:', i+1)
-        perturbation = np.random.multivariate_normal(
-            mean=np.zeros(6),
-            cov=covariance_matrix
-        )
-        perturbations.append(str(perturbation))
+        N_loops = 20
 
-        perturbed_state = initial_cartesian_state_inertial + perturbation
-        propagator_settings.initial_states = perturbed_state
+        within_range = 0
 
-        # simulation
-        dynamics_simulator = numerical_simulation.create_dynamics_simulator(
-            bodies,
-            propagator_settings)
+        write_results_to_file = False
+        output_path = current_dir + '/SimulationOutput/perturbations/' if write_results_to_file else None
 
-        perturbed_state_history = dynamics_simulator.state_history
-        dependent_variables = dynamics_simulator.dependent_variable_history
+        times = []
+        errors = []
+        perturbations = []
+        maximum_errors = []
+        for i in range(N_loops):
+            print('Loop:', i+1)
+            perturbation = rng.multivariate_normal(
+                mean=np.zeros(6),
+                cov=covariance_matrix
+            )
+            perturbations.append(str(perturbation))
 
-        perturbation_state_difference = Util.compare_benchmarks(baseline_state_history,
-                                                                perturbed_state_history,
-                                                                output_path,
-                                                                'perturbation_state_difference.dat')
+            perturbed_state = initial_cartesian_state_inertial + perturbation
+            propagator_settings.initial_states = perturbed_state
 
-        perturbation_state_difference_array = result2array(perturbation_state_difference)
-        e_r = perturbation_state_difference_array[:, 1:4]
+            # simulation
+            dynamics_simulator = numerical_simulation.create_dynamics_simulator(
+                bodies,
+                propagator_settings)
 
-        time = perturbation_state_difference.keys()
+            state_history = dynamics_simulator.state_history
+            dependent_variables = dynamics_simulator.dependent_variable_history
 
-        e_r_mag = []
-        for k in range(len(e_r)):
-            error_magnitude = np.sqrt((e_r[k][0] ** 2) + (e_r[k][1] ** 2) + (e_r[k][2] ** 2))
-            e_r_mag.append(error_magnitude)
+            state_history_array = result2array(state_history)
+            dependent_variables_array = result2array(dependent_variables)
 
-        times.append(time)
-        errors.append(e_r_mag)
+            perturbation_state_difference = Util.compare_benchmarks(baseline_state_history,
+                                                                    state_history,
+                                                                    output_path,
+                                                                    'perturbation_state_difference.dat')
+            perturbation_state_difference_array = result2array(perturbation_state_difference)
+            e_r = perturbation_state_difference_array[:, 1:4]
+            time = perturbation_state_difference.keys()
 
-        e_max = max(e_r_mag)
-        maximum_errors.append(e_max)
+            dependent_variables_time = dependent_variables_array[:, 0]
+            h = dependent_variables_array[:, 2]
+            velocity_vector = dependent_variables_array[:, 13:16]
+            latitude = np.rad2deg(dependent_variables_array[:, 16])
+            longitude = np.rad2deg(dependent_variables_array[:, 17])
+            bank = np.rad2deg(dependent_variables_array[:, 18])
+            vel = dependent_variables_array[:, 19]
+            g = dependent_variables_array[:, 3]
+            rho = dependent_variables_array[:, 20]
 
-    average_position_error = np.mean(np.asarray(maximum_errors))
-    average_position_errors.append(average_position_error)
+            v_3 = vel ** 3
+            k_heatflux = 1.83 * 10 ** (-4)
+            R_n = 1.861  # m
+            heatflux = k_heatflux * np.sqrt(rho / R_n) * v_3
 
-sensitivity_error_plot(uncertainties,average_position_errors)
+            Earth_radius = 6371 * 10 ** 3  # m
+            final_vehicle_position_bodyfixed = bodies.get_body(
+                'Capsule').flight_conditions.body_centered_body_fixed_state[0:3]
+            final_vehicle_position_bodyfixed_unit = final_vehicle_position_bodyfixed / np.linalg.norm(
+                final_vehicle_position_bodyfixed)
+            final_groudstation_position_bodyfixed = bodies.get_body("Earth").get_ground_station(
+                "LandingPad").station_state.get_cartesian_position(0.0)
+            final_groudstation_position_bodyfixed_unit = final_groudstation_position_bodyfixed / np.linalg.norm(
+                final_groudstation_position_bodyfixed)
+            dot_product = np.dot(final_vehicle_position_bodyfixed_unit, final_groudstation_position_bodyfixed_unit)
+            dot_product = np.clip(dot_product, -1.0, 1.0)
+            final_distance_to_target = Earth_radius * np.arccos(dot_product)
+            #print('final distance to target:', final_distance_to_target)
+            if final_distance_to_target <= 5000:
+                within_range += 1
+
+            # calculate delta-V
+            initial_velocity_correction = (initial_cartesian_state_inertial_disconnect -
+                                           initial_cartesian_state_inertial)[3:6]
+            delta_V = np.linalg.norm(initial_velocity_correction)
+            # print(initial_velocity_correction)
+            Isp = 360
+            g0 = 9.807
+            m0 = bodies.get_body('Capsule').mass * np.exp(delta_V / (Isp * g0))
+            mp = m0 - bodies.get_body('Capsule').mass
+            #print('propellant mass:', mp)
+
+            e_r_mag = []
+            for k in range(len(e_r)):
+                error_magnitude = np.sqrt((e_r[k][0] ** 2) + (e_r[k][1] ** 2) + (e_r[k][2] ** 2))
+                e_r_mag.append(error_magnitude)
+
+            times.append(time)
+            errors.append(e_r_mag)
+
+            e_max = max(e_r_mag)
+            maximum_errors.append(e_max)
+
+        average_position_error = np.mean(np.asarray(maximum_errors))
+        average_position_errors.append(average_position_error)
+        print('number of simulations within range:', within_range)
+        simulations_within_range_seed.append(within_range)
+
+    #sensitivity_error_plot(uncertainties,average_position_errors)
+    plt.plot(uncertainties, simulations_within_range_seed, label = 'seed ' + str(seeds[l]))
+plt.xlabel('uncertainty value')
+plt.ylabel('number of simulations within 5km range')
+plt.grid()
+plt.legend()
+plt.show()
 '''
 sigma_r = 2.0 # m
 sigma_v = 0.2 # m/s

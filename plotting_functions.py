@@ -135,7 +135,7 @@ def latlong_plot(lat, long, lat_groundstation, long_groundstation):
 
     fig = plt.figure(figsize=(8, 8))
     ax1 = fig.add_subplot(111)
-    ax1.scatter(long, lat, s=1)
+    ax1.scatter(long, lat, s=2)
     ax1.plot(long_groundstation, lat_groundstation, color = 'g', marker = '*')
     ax1.set_xlabel('latitude [deg]')
     ax1.set_ylabel('longitude [deg]')

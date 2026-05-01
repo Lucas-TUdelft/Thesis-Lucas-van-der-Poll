@@ -30,7 +30,7 @@ import EntryUtilities as Util
 # Load spice kernels
 spice_interface.load_standard_kernels()
 
-target_location = 'Natal'
+target_location = 'Paris'
 if target_location == 'Paris':
     default_inputs = [7505,
                       np.deg2rad(35.0),
@@ -107,7 +107,7 @@ elif target_location == 'Azores':
     # guidance_K = 1 # -
     # deadband_values = [np.deg2rad(2.0), np.deg2rad((8.0 / (7000 ** 2)))] # rad, rad/(m/s^2)
 
-labels = ['Least mp', 'Initial Guess']
+labels = ['Initial Guess', 'Seed 42', 'Seed 22', 'Seed 96', 'Seed 35', 'Seed 11']
 trajectory_values = [0.02, 0.05, 0.08]
 
 times = []
@@ -130,6 +130,239 @@ for i in range(len(labels)):
 
     
     '''
+    if target_location == 'Natal':
+        i_best = 2
+        if i == 0:
+            speed = default_inputs[0]
+            heading_angle = default_inputs[1]
+            flight_path_angle = default_inputs[2]
+            guidance_K = default_inputs[3]
+            deadband_c0 = default_inputs[4]
+            deadband_c1 = default_inputs[5]
+        elif i == 1:
+            speed = 6.42041334e+03
+            heading_angle = 2.19759720e+00
+            flight_path_angle = -1.14722825e-02
+            guidance_K = 2.88804494e+00
+            deadband_c0 = 8.24738566e-03
+            deadband_c1 = 6.29421765e-10
+        elif i == 2:
+            speed = 6.40229918e+03
+            heading_angle = 2.19772681e+00
+            flight_path_angle = -1.00050654e-02
+            guidance_K = 4.98778632e+00
+            deadband_c0 = 2.34701833e-02
+            deadband_c1 = 5.08352784e-10
+        elif i == 3:
+            speed = 6.44860518e+03
+            heading_angle = 2.19734169e+00
+            flight_path_angle = -1.34645321e-02
+            guidance_K = 5.95250131e+00
+            deadband_c0 = 1.58057958e-02
+            deadband_c1 = 6.03527484e-10
+        elif i == 4:
+            speed = 6.40030162e+03
+            heading_angle = 2.19809310e+00
+            flight_path_angle = -1.00109223e-02
+            guidance_K = 8.75790008e+00
+            deadband_c0 = 5.47300319e-03
+            deadband_c1 = 8.04404013e-10
+        elif i == 5:
+            speed = 6.40037111e+03
+            heading_angle = 2.19760387e+00
+            flight_path_angle = -1.00048524e-02
+            guidance_K = 5.20815456e+00
+            deadband_c0 = 5.00184802e-03
+            deadband_c1 = 5.03272929e-10
+
+    if target_location == 'Cabo Verde':
+        i_best = 3
+        if i == 0:
+            speed = default_inputs[0]
+            heading_angle = default_inputs[1]
+            flight_path_angle = default_inputs[2]
+            guidance_K = default_inputs[3]
+            deadband_c0 = default_inputs[4]
+            deadband_c1 = default_inputs[5]
+        elif i == 1:
+            speed = 6.93255546e+03
+            heading_angle = 1.19658593e+00
+            flight_path_angle = -1.13154216e-02
+            guidance_K = 1.34361265e+00
+            deadband_c0 = 7.41931065e-03
+            deadband_c1 = 1.43087627e-09
+        elif i == 2:
+            speed = 6.92629995e+03
+            heading_angle = 1.19640545e+00
+            flight_path_angle = -1.08447060e-02
+            guidance_K = 3.05756179e+00
+            deadband_c0 = 2.45433795e-02
+            deadband_c1 = 3.30381612e-09
+        elif i == 3:
+            speed = 6.92636753e+03
+            heading_angle = 1.19643649e+00
+            flight_path_angle = -1.08428164e-02
+            guidance_K = 2.10769827e+00
+            deadband_c0 = 8.44870329e-02
+            deadband_c1 = 6.34367603e-10
+        elif i == 4:
+            speed = 6.92598428e+03
+            heading_angle = 1.19631711e+00
+            flight_path_angle = -1.07859918e-02
+            guidance_K = 2.29962820e+00
+            deadband_c0 = 8.44959884e-02
+            deadband_c1 = 5.09096736e-09
+        elif i == 5:
+            speed = 6.92658684e+03
+            heading_angle = 1.19646985e+00
+            flight_path_angle = -1.08680795e-02
+            guidance_K = 2.43116704e+00
+            deadband_c0 = 8.50008253e-03
+            deadband_c1 = 5.12710553e-10
+
+    if target_location == 'Azores':
+        i_best = 4
+        if i == 0:
+            speed = default_inputs[0]
+            heading_angle = default_inputs[1]
+            flight_path_angle = default_inputs[2]
+            guidance_K = default_inputs[3]
+            deadband_c0 = default_inputs[4]
+            deadband_c1 = default_inputs[5]
+        elif i == 1:
+            speed = 7.37852271e+03
+            heading_angle = 5.47509962e-01
+            flight_path_angle = -1.44012341e-02
+            guidance_K = 5.31505581e+00
+            deadband_c0 = 6.01103950e-02
+            deadband_c1 = 5.35658816e-09
+        elif i == 2:
+            speed = 7.38417822e+03
+            heading_angle = 5.49038748e-01
+            flight_path_angle = -1.22987846e-02
+            guidance_K = 1.00523214e+01
+            deadband_c0 = 5.15598317e-02
+            deadband_c1 = 5.60520561e-10
+        elif i == 3:
+            speed = 7.35374332e+03
+            heading_angle = 5.45965499e-01
+            flight_path_angle = -1.21723732e-02
+            guidance_K = 9.45384479e+00
+            deadband_c0 = 5.27961074e-02
+            deadband_c1 = 5.89711216e-09
+        elif i == 4:
+            speed = 7.35835171e+03
+            heading_angle = 5.46522952e-01
+            flight_path_angle = -1.26315767e-02
+            guidance_K = 5.82641647e+00
+            deadband_c0 = 4.21659933e-02
+            deadband_c1 = 1.92603511e-09
+        elif i == 5:
+            speed = 7.35511472e+03
+            heading_angle = 5.44926026e-01
+            flight_path_angle = -1.22992207e-02
+            guidance_K = 9.28974283e+00
+            deadband_c0 = 7.31936696e-02
+            deadband_c1 = 4.40410562e-09
+
+    if target_location == 'Canarias':
+        i_best = 5
+        if i == 0:
+            speed = default_inputs[0]
+            heading_angle = default_inputs[1]
+            flight_path_angle = default_inputs[2]
+            guidance_K = default_inputs[3]
+            deadband_c0 = default_inputs[4]
+            deadband_c1 = default_inputs[5]
+        elif i == 1:
+            speed = 7.23221235e+03
+            heading_angle = 8.85586120e-01
+            flight_path_angle = -1.00813568e-02
+            guidance_K = 9.31222663e+00
+            deadband_c0 = 4.27724608e-02
+            deadband_c1 = 2.72890499e-09
+        elif i == 2:
+            speed = 7.23655898e+03
+            heading_angle = 8.85913208e-01
+            flight_path_angle = -1.04789521e-02
+            guidance_K = 3.26035734e+00
+            deadband_c0 = 1.61713506e-02
+            deadband_c1 = 5.70986830e-09
+        elif i == 3:
+            speed = 7.23324598e+03
+            heading_angle = 8.85657822e-01
+            flight_path_angle = -1.01675963e-02
+            guidance_K = 6.15243032e+00
+            deadband_c0 = 2.31797509e-02
+            deadband_c1 = 3.81930754e-09
+        elif i == 4:
+            speed = 7.23208467e+03
+            heading_angle = 8.85622059e-01
+            flight_path_angle = -1.00716049e-02
+            guidance_K = 5.85069142e+00
+            deadband_c0 = 2.91645111e-02
+            deadband_c1 = 5.80497391e-09
+        elif i == 5:
+            speed = 7.23212043e+03
+            heading_angle = 8.85707478e-01
+            flight_path_angle = -1.00874371e-02
+            guidance_K = 4.65507844e+00
+            deadband_c0 = 1.52517932e-02
+            deadband_c1 = 1.61533571e-09
+
+    if target_location == 'Paris':
+        i_best = 'reject'
+        if i == 0:
+            speed = default_inputs[0]
+            heading_angle = default_inputs[1]
+            flight_path_angle = default_inputs[2]
+            guidance_K = default_inputs[3]
+            deadband_c0 = default_inputs[4]
+            deadband_c1 = default_inputs[5]
+        elif i == 1:
+            speed = 7.48816651e+03
+            heading_angle = 6.17729293e-01
+            flight_path_angle = -1.08835516e-02
+            guidance_K = 6.65621551e+00
+            deadband_c0 = 4.18744868e-02
+            deadband_c1 = 3.13104847e-09
+        elif i == 2:
+            speed = 7.48325398e+03
+            heading_angle = 6.17587948e-01
+            flight_path_angle = -1.00673186e-02
+            guidance_K = 1.12866511e+00
+            deadband_c0 = 4.25699009e-02
+            deadband_c1 = 5.60600031e-09
+        elif i == 3:
+            speed = 7.48213742e+03
+            heading_angle = 6.17535821e-01
+            flight_path_angle = -1.02140148e-02
+            guidance_K = 1.01601261e+01
+            deadband_c0 = 2.82759197e-02
+            deadband_c1 = 2.56100221e-09
+        elif i == 4:
+            speed = 7.48739745e+03
+            heading_angle = 6.17273209e-01
+            flight_path_angle = -1.05849407e-02
+            guidance_K = 5.80199940e+00
+            deadband_c0 = 4.98230281e-02
+            deadband_c1 = 2.95244551e-09
+        elif i == 5:
+            speed = 7.48523571e+03
+            heading_angle = 6.17668628e-01
+            flight_path_angle = -1.03371818e-02
+            guidance_K = 9.25498874e+00
+            deadband_c0 = 1.03684430e-02
+            deadband_c1 = 5.95070413e-09
+
+    print('velocity change w.r.t. initial guess:', speed - default_inputs[0], '[m/s]')
+    print('heading angle change w.r.t. initial guess:', np.rad2deg(heading_angle - default_inputs[1]), '[deg]')
+    print('flight_path_angle change w.r.t. initial guess:', np.rad2deg(flight_path_angle - default_inputs[2]), '[deg]')
+    print('guidance overcontrol change w.r.t. initial guess:', guidance_K - default_inputs[3], '[-]')
+    print('guidance c0 change w.r.t. initial guess:', np.rad2deg(deadband_c0 - default_inputs[4]), '[deg]')
+    print('guidance c1 change w.r.t. initial guess:', np.rad2deg(deadband_c1 - default_inputs[5]), '[deg/(m^2/s^2)]')
+
+    '''
     if i == 0:
         speed = default_inputs[0] + 50
         heading_angle = default_inputs[1]
@@ -144,7 +377,7 @@ for i in range(len(labels)):
         guidance_K = default_inputs[3]
         deadband_c0 = default_inputs[4]  # default_inputs[4]
         deadband_c1 = default_inputs[5]
-
+    '''
     '''
     # Natal
     if i == 0:
@@ -463,7 +696,7 @@ for i in range(len(labels)):
     initial_velocity_correction = (initial_cartesian_state_inertial_disconnect -
                                    initial_cartesian_state_inertial)[3:6]
     delta_V = np.linalg.norm(initial_velocity_correction)
-    print(initial_velocity_correction)
+    #print(initial_velocity_correction)
     Isp = 360
     g0 = 9.807
     m0 = bodies.get_body('Capsule').mass * np.exp(delta_V / (Isp * g0))
