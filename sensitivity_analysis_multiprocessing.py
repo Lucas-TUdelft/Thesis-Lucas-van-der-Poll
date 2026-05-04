@@ -46,7 +46,6 @@ def run_sensitivity_analysis(location):
         bodies_to_create = ['Earth', 'Moon', 'Sun']
 
         # Define Ground station settings
-        target_location = 'Natal'
         if target_location == 'Paris':
             speed = 7505
             heading_angle = np.deg2rad(35.0)
