@@ -4,7 +4,7 @@ import numpy as np
 import math
 import os
 
-plot_location = 'Natal'
+plot_location = 'Paris'
 #seeds = [42, 22, 96, 35, 11]
 seeds = [42]
 

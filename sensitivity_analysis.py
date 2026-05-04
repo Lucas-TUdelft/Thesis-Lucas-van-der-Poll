@@ -341,6 +341,7 @@ baseline_state_history = dynamics_simulator.state_history
 uncertainties = [10,8,6,4,2,1,0.5,0.25,0.1]
 average_position_errors = []
 simulations_within_range = []
+range_miss_all = []
 
 seeds = [42, 22, 96, 35, 11]
 
@@ -349,6 +350,7 @@ for l in range(len(seeds)):
     rng = np.random.default_rng(seed = seeds[l])
 
     simulations_within_range_seed = []
+    range_miss_seed = []
 
     for j in range(len(uncertainties)):
         print('uncertainty:', uncertainties[j])
@@ -365,9 +367,11 @@ for l in range(len(seeds)):
             sigma_v ** 2,
         ])
 
-        N_loops = 20
+        N_loops = 10
 
         within_range = 0
+        outside_range = 0
+        margin_miss_total = 0
 
         write_results_to_file = False
         output_path = current_dir + '/SimulationOutput/perturbations/' if write_results_to_file else None
@@ -436,6 +440,11 @@ for l in range(len(seeds)):
             #print('final distance to target:', final_distance_to_target)
             if final_distance_to_target <= 5000:
                 within_range += 1
+            else:
+                outside_range += 1
+                margin_miss = final_distance_to_target - 5000
+                margin_miss_total += margin_miss
+
 
             # calculate delta-V
             initial_velocity_correction = (initial_cartesian_state_inertial_disconnect -
@@ -464,6 +473,13 @@ for l in range(len(seeds)):
         print('number of simulations within range:', within_range)
         simulations_within_range_seed.append(within_range)
 
+        if outside_range > 0:
+            range_miss_average = margin_miss_total / outside_range
+        else:
+            range_miss_average = 0
+        range_miss_seed.append(range_miss_average)
+
+    range_miss_all.append(range_miss_seed)
     #sensitivity_error_plot(uncertainties,average_position_errors)
     plt.plot(uncertainties, simulations_within_range_seed, label = 'seed ' + str(seeds[l]))
 plt.xlabel('uncertainty value')
@@ -471,6 +487,15 @@ plt.ylabel('number of simulations within 5km range')
 plt.grid()
 plt.legend()
 plt.show()
+
+for i in range(len(seeds)):
+    plt.plot(uncertainties, range_miss_all[i], label = 'seed' + str(seeds[i]))
+plt.xlabel('uncertainty value')
+plt.ylabel('average range miss of simulations outside 5km range [m]')
+plt.grid()
+plt.legend()
+plt.show()
+
 '''
 sigma_r = 2.0 # m
 sigma_v = 0.2 # m/s
