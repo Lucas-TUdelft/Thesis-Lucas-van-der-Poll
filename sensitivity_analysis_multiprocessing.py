@@ -447,6 +447,7 @@ def run_sensitivity_analysis(location):
                     mp = m0 - bodies.get_body('Capsule').mass
                     # print('propellant mass:', mp)
 
+                    '''
                     e_r_mag = []
                     for k in range(len(e_r)):
                         error_magnitude = np.sqrt((e_r[k][0] ** 2) + (e_r[k][1] ** 2) + (e_r[k][2] ** 2))
@@ -457,7 +458,7 @@ def run_sensitivity_analysis(location):
 
                     e_max = max(e_r_mag)
                     maximum_errors.append(e_max)
-
+                    '''
                 average_position_error = np.mean(np.asarray(maximum_errors))
                 average_position_errors.append(average_position_error)
                 print('number of simulations within range:', within_range)
