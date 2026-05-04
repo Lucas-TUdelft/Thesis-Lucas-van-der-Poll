@@ -181,7 +181,7 @@ def run_sensitivity_analysis(location):
             "LandingPad",
             [station_altitude, station_latitude, station_longitude],
             element_conversion.geodetic_position_type)
-        environment_setup.add_ground_station(GLOBAL_BODIES.get_body("Earth"), ground_station_settings)
+        environment_setup.add_ground_station(bodies.get_body("Earth"), ground_station_settings)
 
         # capsule
         bodies.create_empty_body('Capsule')
