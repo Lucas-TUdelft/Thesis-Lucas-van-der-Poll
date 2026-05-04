@@ -440,10 +440,12 @@ for l in range(len(seeds)):
             #print('final distance to target:', final_distance_to_target)
             if final_distance_to_target <= 5000:
                 within_range += 1
+                #print(final_distance_to_target, 'within range')
             else:
                 outside_range += 1
                 margin_miss = final_distance_to_target - 5000
                 margin_miss_total += margin_miss
+                #print(final_distance_to_target, 'outside of range')
 
 
             # calculate delta-V

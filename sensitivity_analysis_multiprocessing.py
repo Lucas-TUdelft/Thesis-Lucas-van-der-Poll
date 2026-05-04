@@ -340,14 +340,14 @@ def run_sensitivity_analysis(location):
         seeds = [42, 22, 96, 35, 11]
 
         for l in range(len(seeds)):
-            print('seed:', seeds[l])
+            #print('seed:', seeds[l])
             rng = np.random.default_rng(seed=seeds[l])
 
             simulations_within_range_seed = []
             range_miss_seed = []
 
             for j in range(len(uncertainties)):
-                print('uncertainty:', uncertainties[j])
+                print('location:', location, 'seed:', seeds[l], 'uncertainty:', uncertainties[j])
                 # monte carlo variation
                 sigma_r = uncertainties[j]
                 sigma_v = uncertainties[j] / 10
@@ -361,7 +361,7 @@ def run_sensitivity_analysis(location):
                     sigma_v ** 2,
                 ])
 
-                N_loops = 10
+                N_loops = 500
 
                 within_range = 0
                 outside_range = 0
@@ -431,12 +431,12 @@ def run_sensitivity_analysis(location):
                     # print('final distance to target:', final_distance_to_target)
                     if final_distance_to_target <= 5000:
                         within_range += 1
-                        print(final_distance_to_target, 'within range')
+                        #print(final_distance_to_target, 'within range')
                     else:
                         outside_range += 1
                         margin_miss = final_distance_to_target - 5000
                         margin_miss_total += margin_miss
-                        print(final_distance_to_target, 'outside of range')
+                        #(final_distance_to_target, 'outside of range')
 
                     # calculate delta-V
                     initial_velocity_correction = (initial_cartesian_state_inertial_disconnect -
@@ -463,7 +463,7 @@ def run_sensitivity_analysis(location):
                     '''
                 #average_position_error = np.mean(np.asarray(maximum_errors))
                 #average_position_errors.append(average_position_error)
-                print('number of simulations within range:', within_range)
+                #print('number of simulations within range:', within_range)
                 simulations_within_range_seed.append(within_range)
 
                 if outside_range > 0:
