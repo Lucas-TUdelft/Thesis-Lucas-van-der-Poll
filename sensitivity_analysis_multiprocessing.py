@@ -472,13 +472,16 @@ def run_sensitivity_analysis(location):
 
             range_miss_all.append(range_miss_seed)
 
-            simulations_within_range.append(range_miss_seed)
+            simulations_within_range_seed.append(within_range)
 
         output_to_store = [simulations_within_range, range_miss_all]
 
         file = open(filename, 'wb')
         pickle.dump(output_to_store, file)
         file.close()
+
+        print(f"--- Finished Simulation with Parameter: {location} ---")
+        return {"param": location, "status": "Success"}
 
     except Exception as e:
         print(f"Error in sim {location}: {e}")
