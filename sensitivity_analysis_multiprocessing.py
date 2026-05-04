@@ -459,8 +459,8 @@ def run_sensitivity_analysis(location):
                     e_max = max(e_r_mag)
                     maximum_errors.append(e_max)
                     '''
-                average_position_error = np.mean(np.asarray(maximum_errors))
-                average_position_errors.append(average_position_error)
+                #average_position_error = np.mean(np.asarray(maximum_errors))
+                #average_position_errors.append(average_position_error)
                 print('number of simulations within range:', within_range)
                 simulations_within_range_seed.append(within_range)
 
