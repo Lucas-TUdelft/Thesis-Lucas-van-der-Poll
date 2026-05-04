@@ -332,7 +332,7 @@ def run_sensitivity_analysis(location):
 
         baseline_state_history = dynamics_simulator.state_history
 
-        uncertainties = [10, 8, 6, 4, 2, 1, 0.5, 0.25, 0.1]
+        uncertainties = [10,8,6,4,2,1,0.5,0.25,0.1]
         average_position_errors = []
         simulations_within_range = []
         range_miss_all = []
@@ -379,7 +379,7 @@ def run_sensitivity_analysis(location):
                 perturbations = []
                 maximum_errors = []
                 for i in range(N_loops):
-                    print('Loop:', i + 1)
+                    #print('Loop:', i + 1)
                     perturbation = rng.multivariate_normal(
                         mean=np.zeros(6),
                         cov=covariance_matrix
@@ -431,10 +431,12 @@ def run_sensitivity_analysis(location):
                     # print('final distance to target:', final_distance_to_target)
                     if final_distance_to_target <= 5000:
                         within_range += 1
+                        print(final_distance_to_target, 'within range')
                     else:
                         outside_range += 1
                         margin_miss = final_distance_to_target - 5000
                         margin_miss_total += margin_miss
+                        print(final_distance_to_target, 'outside of range')
 
                     # calculate delta-V
                     initial_velocity_correction = (initial_cartesian_state_inertial_disconnect -

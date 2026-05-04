@@ -64,7 +64,7 @@ for location in locations:
     plt.grid()
     plt.show()
 
-    plt.plot(uncertainties, average_simulations_within_range)
+    plt.plot(uncertainties, average_range_miss)
     plt.suptitle(location)
     plt.xlabel('uncertainty value')
     plt.ylabel('average range miss of simulations outside 5km range [m], for all seeds')
