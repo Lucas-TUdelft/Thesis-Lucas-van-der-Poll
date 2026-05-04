@@ -472,7 +472,7 @@ def run_sensitivity_analysis(location):
 
             range_miss_all.append(range_miss_seed)
 
-            simulations_within_range_seed.append(within_range)
+            simulations_within_range.append(simulations_within_range_seed)
 
         output_to_store = [simulations_within_range, range_miss_all]
 

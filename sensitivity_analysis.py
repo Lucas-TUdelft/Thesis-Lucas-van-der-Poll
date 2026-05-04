@@ -481,6 +481,7 @@ for l in range(len(seeds)):
 
     range_miss_all.append(range_miss_seed)
     #sensitivity_error_plot(uncertainties,average_position_errors)
+    simulations_within_range.append(simulations_within_range_seed)
     plt.plot(uncertainties, simulations_within_range_seed, label = 'seed ' + str(seeds[l]))
 plt.xlabel('uncertainty value')
 plt.ylabel('number of simulations within 5km range')
@@ -496,6 +497,7 @@ plt.grid()
 plt.legend()
 plt.show()
 
+print(simulations_within_range, range_miss_all)
 '''
 sigma_r = 2.0 # m
 sigma_v = 0.2 # m/s
