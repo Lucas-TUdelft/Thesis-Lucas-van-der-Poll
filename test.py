@@ -3,12 +3,18 @@ from tudatpy.kernel.astro import element_conversion
 from tudatpy.kernel.interface import spice
 from tudatpy.kernel.numerical_simulation import environment, environment_setup
 
-deadband = 2.0
-heading_error = -.0
+width_needed = 155
+hight_needed = 190
 
-if heading_error >= deadband:
-    bank_sign = 1.0
-elif heading_error <= deadband:
-    bank_sign = -1.0
+width = 20
+hight = 10
+cost = 13.0
 
-print(bank_sign)
+n_width = (width_needed // width)
+if width_needed % width != 0:
+    n_width += 1
+n_hight = (hight_needed // hight)
+if hight_needed % hight != 0:
+    n_hight += 1
+
+print('total cost:', n_width * n_hight * cost)
