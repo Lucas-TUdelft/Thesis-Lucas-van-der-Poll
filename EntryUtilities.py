@@ -2307,24 +2307,24 @@ class validation_guidance:
         elif (current_time != self.current_time):
 
 
-
-            if current_time <= 86.27:
+            '''
+            if current_time <= 88.1:
                 phi = np.deg2rad(0.0)
-            elif current_time >= 86.27 and current_time <= 99.03:
-                phi = np.deg2rad(100.0)
-            elif current_time >= 99.03 and current_time <= 137.51:
+            elif current_time >= 88.1 and current_time <= 95.5:
+                phi = np.deg2rad(90.0)
+            elif current_time >= 95.5 and current_time <= 137.51:
                 phi = np.deg2rad(180.0)
-            elif current_time >= 137.51 and current_time <= 162.49:
+            elif current_time >= 137.51 and current_time <= 166.5:
                 phi = np.deg2rad(0.0)
-            elif current_time >= 162.49 and current_time <= 166.70:
-                phi = np.deg2rad(55.51)
-            elif current_time >= 166.70 and current_time <= 177.41:
+            elif current_time >= 168.5 and current_time <= 166.70:
+                phi = np.deg2rad(49.1)
+            #elif current_time >= 166.70 and current_time <= 177.41:
                 #phi = np.deg2rad(35.03)
-                phi = np.deg2rad(55.51)
-            elif current_time >= 177.41 and current_time <= 194.59:
-                phi = np.deg2rad(55.51)
+                #phi = np.deg2rad(55.51)
+            elif current_time >= 166.50 and current_time <= 194.59:
+                phi = np.deg2rad(49.1)
             elif current_time >= 194.59 and current_time <= 217.62:
-                phi = np.deg2rad(59.82)
+                phi = np.deg2rad(55.3)
             elif current_time >= 217.62 and current_time <= 243.57:
                 phi = np.deg2rad(-73.83)
             elif current_time >= 243.57 and current_time <= 298.05:
@@ -2343,6 +2343,52 @@ class validation_guidance:
                 phi = np.deg2rad(-84.07)
             else:
                 phi = np.deg2rad(104.55)
+            '''
+
+            if current_time <= 61.1:
+                phi = np.deg2rad(0.0)
+            elif current_time >= 61.1 and current_time <= 94.5:
+                phi = np.deg2rad(12.0)
+            elif current_time >= 94.5 and current_time <= 98.4:
+                phi = np.deg2rad(90.0)
+            elif current_time >= 98.4 and current_time <= 103.4:
+                phi = np.deg2rad(180.0)
+            elif current_time >= 103.4 and current_time <= 148.51:
+                phi = np.deg2rad(-180.0)
+            elif current_time >= 148.51 and current_time <= 166.5:
+                phi = np.deg2rad(12.0)
+            #elif current_time >= 168.5 and current_time <= 166.70:
+                #phi = np.deg2rad(49.1)
+                # elif current_time >= 166.70 and current_time <= 177.41:
+                # phi = np.deg2rad(35.03)
+                # phi = np.deg2rad(55.51)
+            elif current_time >= 166.50 and current_time <= 181.3:
+                phi = np.deg2rad(49.1)
+            elif current_time >= 181.3 and current_time <= 194.59:
+                phi = np.deg2rad(36.0)
+            elif current_time >= 194.59 and current_time <= 224.8:
+                phi = np.deg2rad(55.3)
+            elif current_time >= 224.8 and current_time <= 243.57:
+                phi = np.deg2rad(-63.83)
+            elif current_time >= 243.57 and current_time <= 262.3:
+                phi = np.deg2rad(-73.6)
+            elif current_time >= 262.3 and current_time <= 298.05:
+                phi = np.deg2rad(-83.0)
+            elif current_time >= 298.05 and current_time <= 322.05:
+                phi = np.deg2rad(-73.83)
+            elif current_time >= 322.05 and current_time <= 345.73:
+                phi = np.deg2rad(-37.19)
+            elif current_time >= 345.73 and current_time <= 362.5:
+                phi = np.deg2rad(100.30)
+            elif current_time >= 362.5 and current_time <= 389.6:
+                phi = np.deg2rad(74.91)
+            elif current_time >= 389.6 and current_time <= 380.76:
+                phi = np.deg2rad(-59.82)
+            elif current_time >= 380.76 and current_time <= 413.19:
+                phi = np.deg2rad(-89.07)
+            else:
+                phi = np.deg2rad(104.55)
+
 
             self.bank_angle = phi
 

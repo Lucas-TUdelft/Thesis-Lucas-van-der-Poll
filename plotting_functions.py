@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 
 
 def maximum_error_plot(time_steps,max_errors):
@@ -134,9 +136,14 @@ def latlong_plot(lat, long, lat_groundstation, long_groundstation):
     '''
 
     fig = plt.figure(figsize=(8, 8))
-    ax1 = fig.add_subplot(111)
-    ax1.scatter(long, lat, s=2)
-    ax1.plot(long_groundstation, lat_groundstation, color = 'g', marker = '*')
+    ax1 = fig.add_subplot(111, projection=ccrs.PlateCarree())
+    ax1.set_extent([-75, 40, -12, 55], crs=ccrs.PlateCarree())
+    ax1.add_feature(cfeature.LAND)
+    ax1.add_feature(cfeature.OCEAN)
+    ax1.add_feature(cfeature.COASTLINE, linewidth=0.5)
+    ax1.add_feature(cfeature.BORDERS, linewidth=0.3)
+    ax1.scatter(long, lat, s=2, transform=ccrs.PlateCarree())
+    ax1.plot(long_groundstation, lat_groundstation, color = 'g', marker = '*', transform=ccrs.PlateCarree())
     ax1.set_xlabel('latitude [deg]')
     ax1.set_ylabel('longitude [deg]')
     ax1.grid()
@@ -379,14 +386,19 @@ def latlong_comparison_plot(lats, longs, lat_groundstation, long_groundstation, 
     ''' plot the latitude-longitude over time of various propagators '''
 
     fig = plt.figure(figsize=(8, 8))
-    ax1 = fig.add_subplot(111)
+    ax1 = fig.add_subplot(111, projection=ccrs.PlateCarree())
+    ax1.set_extent([-75, 40, -12, 55], crs=ccrs.PlateCarree())
+    ax1.add_feature(cfeature.LAND)
+    ax1.add_feature(cfeature.OCEAN)
+    ax1.add_feature(cfeature.COASTLINE, linewidth=0.5)
+    ax1.add_feature(cfeature.BORDERS, linewidth=0.3)
 
     linestyles = ['-','-','--',':','--',':',':','--',':',':']
 
     for i in range(len(lats)):
-        ax1.scatter(longs[i], lats[i],label = labels[i], s=1)
+        ax1.scatter(longs[i], lats[i],label = labels[i], s=1, transform=ccrs.PlateCarree())
 
-    ax1.plot(long_groundstation, lat_groundstation, color='g', marker='*')
+    ax1.plot(long_groundstation, lat_groundstation, color='g', marker='*', transform=ccrs.PlateCarree())
     ax1.set_xlabel('latitude [deg]')
     ax1.set_ylabel('longitude [deg]')
     ax1.grid()

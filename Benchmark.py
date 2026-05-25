@@ -232,7 +232,7 @@ if investigate_propagators:
         benchmark_output_path = current_dir + '/SimulationOutput/benchmarks/' if write_results_to_file else None
 
         # Generate benchmarks
-        benchmark_time_step = 0.02
+        benchmark_time_step = 0.2
         benchmark_list = Util.generate_benchmarks(benchmark_time_step,
                                                   simulation_start_epoch,
                                                   bodies,

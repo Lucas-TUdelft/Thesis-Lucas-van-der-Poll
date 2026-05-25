@@ -93,7 +93,7 @@ def reusable_vehicle_cost_variable(launch_number, t_travel, M_p, n_reuses):
     C_propellant = inflation_2015_2025 * C_propellant_2015
     #print(f'Propellant Costs: {C_propellant/1000000} M€')
 
-    print(F_sr)
+    #print(F_sr)
     print(f'launch number: {launch_number}, stage productions: {n_p}, stage refurbishments: {launch_number - n_p}')
     total_cost = (n_p * F_sr + (C_propellant + C_ship_euro) * (launch_number - n_p) + C_refurbishment) / 1000000
     return(total_cost)
@@ -216,7 +216,7 @@ A62_reusable_list = []
 A64_reusable_list = []
 launches_list = []
 
-n_reuses_list = [5]
+n_reuses_list = [4,5,6,7,8,9,10]
 for j in range(len(n_reuses_list)):
     n_reuses = n_reuses_list[j]
     A62_expendable = []

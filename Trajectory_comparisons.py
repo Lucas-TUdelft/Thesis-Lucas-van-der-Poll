@@ -30,7 +30,7 @@ import EntryUtilities as Util
 # Load spice kernels
 spice_interface.load_standard_kernels()
 
-target_location = 'Azores'
+target_location = 'Cabo Verde'
 if target_location == 'Paris':
     default_inputs = [7505,
                       np.deg2rad(35.0),

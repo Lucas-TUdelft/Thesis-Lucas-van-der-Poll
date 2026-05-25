@@ -27,6 +27,8 @@ for i in range(n_alt):
     CD_coeff[i,:] = np.array([float(x) for x in CD_lines[3 + i].split()])
     CL_coeff[i,:] = np.array([float(x) for x in CL_lines[3 + i].split()])
 
+plt.rcParams.update({'font.size': 14})
+
 plt.figure()
 for i in range(n_alt):
     plt.plot(mach_numbers, CD_coeff[i,:], label = str(altitudes[i]))

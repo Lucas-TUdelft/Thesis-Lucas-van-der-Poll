@@ -25,6 +25,9 @@ from tudatpy.util import result2array
 # Problem-specific imports
 import EntryUtilities as Util
 
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+
 ###########################################################################
 # DEFINE GLOBAL SETTINGS ##################################################
 ###########################################################################
@@ -167,11 +170,11 @@ acceleration_models = propagation_setup.create_acceleration_models(
     central_bodies)
 
 # initial state
-radial_distance = spice_interface.get_average_radius('Earth') + 123883.27776
+radial_distance = spice_interface.get_average_radius('Earth') + 125593.27776
 latitude = np.deg2rad(-23.652)
 longitude = np.deg2rad(174.928)
-speed = 11000
-flight_path_angle = np.deg2rad(-6.616)
+speed = 10730
+flight_path_angle = np.deg2rad(-6.8)
 heading_angle = np.deg2rad(95.0)
 
 # Convert spherical elements to body-fixed cartesian coordinates
@@ -218,10 +221,64 @@ vel = dependent_variables_array[:, 19]
 g = dependent_variables_array[:, 3]
 dependent_variables_time = dependent_variables.keys()
 
-altitude_plot(h, dependent_variables_time)
-bank_plot(bank, dependent_variables_time)
-velocity_plot(vel, dependent_variables_time)
-gload_plot(g, dependent_variables_time)
+img1 = mpimg.imread("validation data 2 cropped.JPG")
+img2 = mpimg.imread("validation data cropped bank.JPG")
+img3 = mpimg.imread("validation data cropped gload.JPG")
+
+fig = plt.figure(figsize=(8, 8))
+ax1 = fig.add_subplot(111)
+ax1.imshow(img1, extent=[0, 480, 0, 121920], aspect='auto', zorder=0)
+ax1.plot(dependent_variables_time,h,zorder=2, linewidth = 3)
+ax1.set_xlabel('Time [s]')
+ax1.set_ylabel('Altitude [m]')
+ax1.grid()
+ax1.set_xlim(0,480)
+ax1.set_ylim(0,121920)
+fig.tight_layout()
+plt.show()
+
+fig = plt.figure(figsize=(8, 8))
+ax1 = fig.add_subplot(111)
+ax1.imshow(img1, extent=[0, 480, 0, 12192], aspect='auto', zorder=0)
+ax1.plot(dependent_variables_time,vel,zorder=2, linewidth = 3)
+ax1.set_xlabel('Time [s]')
+ax1.set_ylabel('Altitude [m]')
+ax1.grid()
+ax1.set_xlim(0,480)
+ax1.set_ylim(0,12192)
+fig.tight_layout()
+plt.show()
+
+fig = plt.figure(figsize=(8, 8))
+ax1 = fig.add_subplot(111)
+ax1.imshow(img2, extent=[0, 480, -180, 180], aspect='auto', zorder=0)
+ax1.plot(dependent_variables_time,bank,zorder=2, linewidth = 3)
+ax1.set_xlabel('Time [s]')
+ax1.set_ylabel('Altitude [m]')
+ax1.grid()
+ax1.set_xlim(0,480)
+ax1.set_ylim(-180,180)
+fig.tight_layout()
+plt.show()
+
+
+fig = plt.figure(figsize=(8, 8))
+ax1 = fig.add_subplot(111)
+ax1.imshow(img3, extent=[0, 480, 0, 8], aspect='auto', zorder=0)
+ax1.plot(dependent_variables_time,g,zorder=2, linewidth = 3)
+ax1.set_xlabel('Time [s]')
+ax1.set_ylabel('Altitude [m]')
+ax1.grid()
+ax1.set_xlim(0,480)
+ax1.set_ylim(0,8)
+fig.tight_layout()
+plt.show()
+
+
+#altitude_plot(h, dependent_variables_time)
+#bank_plot(bank, dependent_variables_time)
+#velocity_plot(vel, dependent_variables_time)
+#gload_plot(g, dependent_variables_time)
 
 '''
 Validation changes to main:
