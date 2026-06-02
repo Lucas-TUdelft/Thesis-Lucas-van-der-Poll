@@ -1,7 +1,7 @@
 import numpy as np
 
 # return to landing site
-delta_V = np.cos(np.deg2rad(-5.0)) * 6.93E3
+delta_V = np.cos(np.deg2rad(-8.0)) * 6.93E3
 M_dry = 23000
 Isp = 360
 g0 = 9.807
@@ -152,7 +152,7 @@ def determine_burn_velocity(vx, vy, M, t):
     return(v)
 
 M_dry = 23000
-M_p = 21650 / 4
+M_p = 21650 * 4 * 0.5
 thrust_level = 1.0
 iterating = True
 M = M_dry + M_p

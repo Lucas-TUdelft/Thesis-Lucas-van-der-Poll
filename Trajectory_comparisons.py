@@ -30,7 +30,7 @@ import EntryUtilities as Util
 # Load spice kernels
 spice_interface.load_standard_kernels()
 
-target_location = 'Cabo Verde'
+target_location = 'Paris'
 if target_location == 'Paris':
     default_inputs = [7505,
                       np.deg2rad(35.0),
@@ -673,10 +673,26 @@ for i in range(len(labels)):
     g = dependent_variables_array[:, 3]
     rho = dependent_variables_array[:, 20]
 
+    max_gload = max(g)
+    print('peak g-load:', max_gload)
     v_3 = vel ** 3
     k_heatflux = 1.83 * 10 ** (-4)
     R_n = 1.861  # m
     heatflux = k_heatflux * np.sqrt(rho / R_n) * v_3
+    max_heatflux = max(heatflux)
+    print('peak heat flux', max_heatflux / 1000000)
+    total_heatload = np.trapz(heatflux)
+    print('total heat load', total_heatload / 1000000)
+    final_groudstation_position_bodyfixed = bodies.get_body("Earth").get_ground_station(
+        "LandingPad").station_state.get_cartesian_position(0.0)
+    station_final_intertial_velocity = environment.transform_to_inertial_orientation(
+        np.append(final_groudstation_position_bodyfixed, [0.0, 0.0, 0.0]),
+        dependent_variables_time[-1],
+        bodies.get_body('Earth').rotation_model
+    )[3:6]
+    final_velocity = np.linalg.norm(station_final_intertial_velocity - velocity_vector[-1])
+    print('final velocity:', final_velocity)
+    succesfull_completion = dynamics_simulator.integration_completed_successfully
 
     Earth_radius = 6371 * 10 ** 3  # m
     final_vehicle_position_bodyfixed = bodies.get_body(
@@ -690,7 +706,7 @@ for i in range(len(labels)):
     dot_product = np.dot(final_vehicle_position_bodyfixed_unit, final_groudstation_position_bodyfixed_unit)
     dot_product = np.clip(dot_product, -1.0, 1.0)
     final_distance_to_target = Earth_radius * np.arccos(dot_product)
-    print('final distance to target:', final_distance_to_target)
+    print('final distance to target:', final_distance_to_target / 1000)
 
     # calculate delta-V
     initial_velocity_correction = (initial_cartesian_state_inertial_disconnect -

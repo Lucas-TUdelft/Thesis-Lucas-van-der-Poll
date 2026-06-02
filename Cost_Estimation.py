@@ -90,6 +90,7 @@ def reusable_vehicle_cost_variable(launch_number, t_travel, M_p, n_reuses):
     # propellant cost (2015)
 
     C_propellant_2015 = (M_p / (r + 1)) * 1.35 + (M_p - (M_p / (r + 1))) * 0.14
+    #print((0.75 * np.pi * (M_p / (r + 1)) / 422 + ((M_p - (M_p / (r + 1))) / 1141))**(1/3))
     C_propellant = inflation_2015_2025 * C_propellant_2015
     #print(f'Propellant Costs: {C_propellant/1000000} M€')
 
@@ -183,21 +184,24 @@ def reusable_vehicle_cost(launch_number, t_travel, M_p):
 target_location = 'Cabo Verde'
 if target_location == 'Natal':
     t_travel = (11 * 24) + 23 + (3 / 60) # h
+    t_travel *= 2
     M_p = (18558.58 + 317) * 1.1 # kg
     payload_mass_penalty = (10648.25 + (18558.58 * 1.2) - 6875) * 0.25
     #print(payload_mass_penalty)
 if target_location == 'Cabo Verde':
     t_travel = (7 * 24) + 17 + (11 / 60) # h
+    t_travel *= 2
     M_p = (15703.60 + 317) * 1.1 #kg
     payload_mass_penalty = (10648.25 + (15703.60 * 1.2) - 6875) * 0.25
     #print(payload_mass_penalty)
 if target_location == 'Canarias':
     t_travel = (4 * 24) + 20 + (24 / 60) # h
+    t_travel *= 2
     M_p = (38084.08 + 317) * 1.1 #kg
     payload_mass_penalty = (10648.25 + (38084.08 * 1.2) - 6875) * 0.25
     #print(payload_mass_penalty)
 
-
+print(payload_mass_penalty)
 T1 = 14479579.45
 MPA = T1 * 0.1
 FM1 = T1 - MPA
@@ -208,15 +212,17 @@ C_MAIT = FM1 * STH * L_d * HW
 C_ENG = 3.0 * FM1
 development_cost = (C_ENG + (C_ENG + C_MAIT) * 0.1 + C_MAIT) / 1000000
 
-account_for_5th_launch_expendable = False
+account_for_5th_launch_expendable = True
 checking_A62_per_launch = True
 checking_A64_per_launch = True
 
 A62_reusable_list = []
 A64_reusable_list = []
 launches_list = []
+years_list = []
 
-n_reuses_list = [4,5,6,7,8,9,10]
+#n_reuses_list = [4,5,8,10]
+n_reuses_list = [5]
 for j in range(len(n_reuses_list)):
     n_reuses = n_reuses_list[j]
     A62_expendable = []
@@ -224,6 +230,7 @@ for j in range(len(n_reuses_list)):
     A62_reusable = []
     A64_reusable = []
     launches = []
+    years = []
     for i in range(500):
         total_cost = reusable_vehicle_cost_variable(i+1, t_travel, M_p, n_reuses)
         if (i+1) <= 150:
@@ -256,12 +263,14 @@ for j in range(len(n_reuses_list)):
         A62_reusable.append(cost_per_launch_A62)
         A64_reusable.append(cost_per_launch_A64)
         launches.append(i+1)
+        years.append((i+1)/30)
 
         print('########')
 
     A62_reusable_list.append(A62_reusable)
     A64_reusable_list.append(A64_reusable)
     launches_list.append(launches)
+    years_list.append(years)
 
         #n = 0
         #launch_number = i + 1
@@ -293,15 +302,17 @@ for j in range(len(n_reuses_list)):
 
 plt.suptitle(target_location)
 for i in range(len(n_reuses_list)):
-    plt.plot(launches, A62_reusable_list[i], label=f'Ariane62 reusable, {n_reuses_list[i]} reuses')
-    plt.plot(launches, A64_reusable_list[i], label=f'Ariane64 reusable, {n_reuses_list[i]} reuses')
-plt.plot(launches, A62_expendable, label='Ariane62 expendable')
-plt.plot(launches, A64_expendable, label='Ariane64 expendable')
-plt.xlabel('number of launches [-]')
+    plt.plot(years_list[i], A62_reusable_list[i], label=f'Ariane62 reusable, {n_reuses_list[i]} reuses')
+    plt.plot(years_list[i], A64_reusable_list[i], label=f'Ariane64 reusable, {n_reuses_list[i]} reuses')
+plt.plot(years, A62_expendable, label='Ariane62 expendable')
+plt.plot(years, A64_expendable, label='Ariane64 expendable')
+plt.xlabel('time [y]')
 plt.ylabel('Cost per Launch [M€]')
 plt.legend()
 plt.grid()
 plt.show()
+
+print(A62_reusable_list[0][-1], A64_reusable_list[0][-1])
 
 plt.suptitle(target_location)
 for j in range(len(n_reuses_list)):
@@ -334,11 +345,11 @@ for j in range(len(n_reuses_list)):
         A62_reusable_cumulative.append(A62_reusable_cumulative_i)
         A64_reusable_cumulative.append(A64_reusable_cumulative_i)
 
-    plt.plot(launches, A62_reusable_cumulative, label=f'Ariane62 reusable, {n_reuses_list[j]} reuses')
-    plt.plot(launches, A64_reusable_cumulative, label=f'Ariane64 reusable, {n_reuses_list[j]} reuses')
-plt.plot(launches, A62_expendable_cumulative, label='Ariane62 expendable')
-plt.plot(launches, A64_expendable_cumulative, label='Ariane64 expendable')
-plt.xlabel('number of launches [-]')
+    plt.plot(years_list[j], A62_reusable_cumulative, label=f'Ariane62 reusable, {n_reuses_list[j]} reuses')
+    plt.plot(years_list[j], A64_reusable_cumulative, label=f'Ariane64 reusable, {n_reuses_list[j]} reuses')
+plt.plot(years, A62_expendable_cumulative, label='Ariane62 expendable')
+plt.plot(years, A64_expendable_cumulative, label='Ariane64 expendable')
+plt.xlabel('time [y]')
 plt.ylabel('Cumulative cost of launches [M€]')
 plt.legend()
 plt.grid()
@@ -350,6 +361,7 @@ for j in range(len(n_reuses_list)):
     A64_payload_expendable = 21650
     A62_payload_reusable = A62_payload_expendable - payload_mass_penalty
     A64_payload_reusable = A64_payload_expendable - payload_mass_penalty
+    print(A62_payload_reusable, A64_payload_reusable)
 
     A62_expendable_cost_per_kg = []
     A64_expendable_cost_per_kg = []
@@ -361,8 +373,9 @@ for j in range(len(n_reuses_list)):
                 A62_payload_reusable = A62_payload_expendable - payload_mass_penalty
                 A64_payload_reusable = A64_payload_expendable - payload_mass_penalty
             if (i+1)%n_reuses_list[j] == 0:
-                A62_payload_reusable = A62_payload_expendable - payload_mass_penalty + M_p
-                A64_payload_reusable = A64_payload_expendable - payload_mass_penalty + M_p
+                A62_payload_reusable = A62_payload_expendable - payload_mass_penalty + M_p * 0.25
+                A64_payload_reusable = A64_payload_expendable - payload_mass_penalty + M_p * 0.25
+                print(A62_payload_reusable, A64_payload_reusable)
         A62_expendable_cost_per_kg.append((A62_expendable[i] / A62_payload_expendable) * 1000000)
         A64_expendable_cost_per_kg.append((A64_expendable[i] / A64_payload_expendable) * 1000000)
         if A62_payload_reusable > 0.0:
@@ -372,12 +385,12 @@ for j in range(len(n_reuses_list)):
 
 
     if A62_payload_reusable > 0.0:
-        plt.plot(launches, A62_reusable_cost_per_kg, label=f'Ariane62 reusable, {n_reuses_list[j]} reuses')
+        plt.plot(years_list[j], A62_reusable_cost_per_kg, label=f'Ariane62 reusable, {n_reuses_list[j]} reuses')
     if A64_payload_reusable > 0.0:
-        plt.plot(launches, A64_reusable_cost_per_kg, label=f'Ariane64 reusable, {n_reuses_list[j]} reuses')
-plt.plot(launches, A62_expendable_cost_per_kg, label='Ariane62 expendable')
-plt.plot(launches, A64_expendable_cost_per_kg, label='Ariane64 expendable')
-plt.xlabel('number of launches [-]')
+        plt.plot(years_list[j], A64_reusable_cost_per_kg, label=f'Ariane64 reusable, {n_reuses_list[j]} reuses')
+plt.plot(years, A62_expendable_cost_per_kg, label='Ariane62 expendable')
+plt.plot(years, A64_expendable_cost_per_kg, label='Ariane64 expendable')
+plt.xlabel('time [y]')
 plt.ylabel('Cost per max kg launched [€/kg]')
 plt.legend()
 plt.grid()
